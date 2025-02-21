@@ -1,0 +1,291 @@
+#:kivy 2.0.0
+#:import Factory kivy.factory.Factory
+
+<FormularioChofer>:
+    fecha_input: fecha_input
+    nombre_input: nombre_input
+    vehiculo_input: vehiculo_input
+    placa_input: placa_input
+    ubicacion_inicial_input: ubicacion_inicial_input
+    ubicacion_final_input: ubicacion_final_input
+    hora_salida_input: hora_salida_input
+    hora_llegada_input: hora_llegada_input
+    km_inicial_input: km_inicial_input
+    km_final_input: km_final_input
+    comentarios_input: comentarios_input
+    
+    orientation: 'vertical'
+    padding: 20
+    spacing: 10
+    canvas.before:
+        Color:
+            rgba: 0.9, 0.9, 0.9, 1  # Fondo gris claro
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+    Label:
+        text: "Formulario para Choferes"
+        font_size: 24
+        color: 0, 0.5, 0.8, 1  # Azul moderno
+        bold: True
+        size_hint_y: None
+        height: 50
+
+    ScrollView:
+        do_scroll_x: False
+        BoxLayout:
+            orientation: 'vertical'
+            spacing: 15
+            size_hint_y: None
+            height: self.minimum_height
+
+            # Campo Fecha
+            BoxLayout:
+                size_hint_y: None
+                height: 50
+                Label:
+                    text: "Fecha:"
+                    size_hint_x: 0.3
+                    color: 0, 0, 0, 1
+                TextInput:
+                    id: fecha_input
+                    multiline: False
+                    background_color: 1, 1, 1, 1
+                    foreground_color: 0, 0, 0, 1
+                    padding: [10, 10]
+                    size_hint_x: 0.7
+                    canvas.before:
+                        Color:
+                            rgba: 0, 0.5, 0.8, 1  # Borde azul
+                        Line:
+                            rounded_rectangle: (self.x, self.y, self.width, self.height, 10)
+
+            # Campo Nombre Chofer
+            BoxLayout:
+                size_hint_y: None
+                height: 50
+                Label:
+                    text: "Nombre Chofer:"
+                    size_hint_x: 0.3
+                    color: 0, 0, 0, 1
+                TextInput:
+                    id: nombre_input
+                    multiline: False
+                    background_color: 1, 1, 1, 1
+                    foreground_color: 0, 0, 0, 1
+                    padding: [10, 10]
+                    size_hint_x: 0.7
+                    canvas.before:
+                        Color:
+                            rgba: 0, 0.5, 0.8, 1
+                        Line:
+                            rounded_rectangle: (self.x, self.y, self.width, self.height, 10)
+
+            # Campo Vehículo
+            BoxLayout:
+                size_hint_y: None
+                height: 50
+                Label:
+                    text: "Vehículo:"
+                    size_hint_x: 0.3
+                    color: 0, 0, 0, 1
+                TextInput:
+                    id: vehiculo_input
+                    multiline: False
+                    background_color: 1, 1, 1, 1
+                    foreground_color: 0, 0, 0, 1
+                    padding: [10, 10]
+                    size_hint_x: 0.7
+                    canvas.before:
+                        Color:
+                            rgba: 0, 0.5, 0.8, 1
+                        Line:
+                            rounded_rectangle: (self.x, self.y, self.width, self.height, 10)
+
+            # Campo Placa
+            BoxLayout:
+                size_hint_y: None
+                height: 50
+                Label:
+                    text: "Placa:"
+                    size_hint_x: 0.3
+                    color: 0, 0, 0, 1
+                TextInput:
+                    id: placa_input
+                    multiline: False
+                    background_color: 1, 1, 1, 1
+                    foreground_color: 0, 0, 0, 1
+                    padding: [10, 10]
+                    size_hint_x: 0.7
+                    canvas.before:
+                        Color:
+                            rgba: 0, 0.5, 0.8, 1
+                        Line:
+                            rounded_rectangle: (self.x, self.y, self.width, self.height, 10)
+
+            # Campo Ubicación Inicial
+            BoxLayout:
+                size_hint_y: None
+                height: 50
+                Label:
+                    text: "Ubicación Inicial:"
+                    size_hint_x: 0.3
+                    color: 0, 0, 0, 1
+                TextInput:
+                    id: ubicacion_inicial_input
+                    multiline: False
+                    background_color: 1, 1, 1, 1
+                    foreground_color: 0, 0, 0, 1
+                    padding: [10, 10]
+                    size_hint_x: 0.7
+                    canvas.before:
+                        Color:
+                            rgba: 0, 0.5, 0.8, 1
+                        Line:
+                            rounded_rectangle: (self.x, self.y, self.width, self.height, 10)
+
+            # Campo Ubicación Final
+            BoxLayout:
+                size_hint_y: None
+                height: 50
+                Label:
+                    text: "Ubicación Final:"
+                    size_hint_x: 0.3
+                    color: 0, 0, 0, 1
+                TextInput:
+                    id: ubicacion_final_input
+                    multiline: False
+                    background_color: 1, 1, 1, 1
+                    foreground_color: 0, 0, 0, 1
+                    padding: [10, 10]
+                    size_hint_x: 0.7
+                    canvas.before:
+                        Color:
+                            rgba: 0, 0.5, 0.8, 1
+                        Line:
+                            rounded_rectangle: (self.x, self.y, self.width, self.height, 10)
+
+            # Campo Hora Salida
+            BoxLayout:
+                size_hint_y: None
+                height: 50
+                Label:
+                    text: "Hora Salida:"
+                    size_hint_x: 0.3
+                    color: 0, 0, 0, 1
+                TextInput:
+                    id: hora_salida_input
+                    multiline: False
+                    hint_text: "HH:MM"
+                    background_color: 1, 1, 1, 1
+                    foreground_color: 0, 0, 0, 1
+                    padding: [10, 10]
+                    size_hint_x: 0.7
+                    canvas.before:
+                        Color:
+                            rgba: 0, 0.5, 0.8, 1
+                        Line:
+                            rounded_rectangle: (self.x, self.y, self.width, self.height, 10)
+
+            # Campo Hora Llegada
+            BoxLayout:
+                size_hint_y: None
+                height: 50
+                Label:
+                    text: "Hora Llegada:"
+                    size_hint_x: 0.3
+                    color: 0, 0, 0, 1
+                TextInput:
+                    id: hora_llegada_input
+                    multiline: False
+                    hint_text: "HH:MM"
+                    background_color: 1, 1, 1, 1
+                    foreground_color: 0, 0, 0, 1
+                    padding: [10, 10]
+                    size_hint_x: 0.7
+                    canvas.before:
+                        Color:
+                            rgba: 0, 0.5, 0.8, 1
+                        Line:
+                            rounded_rectangle: (self.x, self.y, self.width, self.height, 10)
+
+            # Campo Kilometraje Inicial
+            BoxLayout:
+                size_hint_y: None
+                height: 50
+                Label:
+                    text: "Km Inicial:"
+                    size_hint_x: 0.3
+                    color: 0, 0, 0, 1
+                TextInput:
+                    id: km_inicial_input
+                    multiline: False
+                    input_filter: 'float'
+                    background_color: 1, 1, 1, 1
+                    foreground_color: 0, 0, 0, 1
+                    padding: [10, 10]
+                    size_hint_x: 0.7
+                    canvas.before:
+                        Color:
+                            rgba: 0, 0.5, 0.8, 1
+                        Line:
+                            rounded_rectangle: (self.x, self.y, self.width, self.height, 10)
+
+            # Campo Kilometraje Final
+            BoxLayout:
+                size_hint_y: None
+                height: 50
+                Label:
+                    text: "Km Final:"
+                    size_hint_x: 0.3
+                    color: 0, 0, 0, 1
+                TextInput:
+                    id: km_final_input
+                    multiline: False
+                    input_filter: 'float'
+                    background_color: 1, 1, 1, 1
+                    foreground_color: 0, 0, 0, 1
+                    padding: [10, 10]
+                    size_hint_x: 0.7
+                    canvas.before:
+                        Color:
+                            rgba: 0, 0.5, 0.8, 1
+                        Line:
+                            rounded_rectangle: (self.x, self.y, self.width, self.height, 10)
+
+            # Campo Comentarios
+            BoxLayout:
+                size_hint_y: None
+                height: 100
+                Label:
+                    text: "Comentarios:"
+                    size_hint_x: 0.3
+                    color: 0, 0, 0, 1
+                TextInput:
+                    id: comentarios_input
+                    multiline: True
+                    background_color: 1, 1, 1, 1
+                    foreground_color: 0, 0, 0, 1
+                    padding: [10, 10]
+                    size_hint_x: 0.7
+                    canvas.before:
+                        Color:
+                            rgba: 0, 0.5, 0.8, 1
+                        Line:
+                            rounded_rectangle: (self.x, self.y, self.width, self.height, 10)
+
+    Button:
+        text: "Enviar"
+        size_hint_y: None
+        height: 50
+        background_color: 0, 0.5, 0.8, 1  # Azul moderno
+        color: 1, 1, 1, 1
+        on_press: root.enviar_datos()
+        canvas.before:
+            Color:
+                rgba: 0, 0.4, 0.7, 1
+            RoundedRectangle:
+                pos: self.pos
+                size: self.size
+                radius: [10]
