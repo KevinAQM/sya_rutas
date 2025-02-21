@@ -1,3 +1,4 @@
+# main.py
 from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.popup import Popup
@@ -44,12 +45,12 @@ class FormularioChofer(BoxLayout):
             "Kilometraje Inicial": self.km_inicial_input.text,
             "Kilometraje Final": self.km_final_input.text,
         }
-        
+       
         for nombre, valor in campos.items():
             if not valor.strip():
                 self.mostrar_popup_error(f"El campo '{nombre}' es obligatorio.")
                 return False
-        
+       
         # Validar formato de hora (HH:MM)
         try:
             datetime.strptime(self.hora_salida_input.text, "%H:%M")
@@ -57,7 +58,7 @@ class FormularioChofer(BoxLayout):
         except ValueError:
             self.mostrar_popup_error("Las horas deben estar en formato HH:MM (ej. 14:30).")
             return False
-        
+       
         # Validar kilometraje (números positivos)
         try:
             km_inicial = float(self.km_inicial_input.text)
@@ -68,7 +69,7 @@ class FormularioChofer(BoxLayout):
         except ValueError:
             self.mostrar_popup_error("El kilometraje debe ser un número válido.")
             return False
-        
+       
         return True
 
     def enviar_datos(self):
@@ -118,11 +119,11 @@ class FormularioChofer(BoxLayout):
         self.comentarios_input.text = ""
 
     def mostrar_popup_exito(self, mensaje):
-        popup = Popup(title='Éxito', content=Label(text=mensaje), size_hint=(0.8, 0.4))
+        popup = Popup(title='Éxito', content=Label(text=mensaje, font_size=40), size_hint=(0.8, 0.4))
         popup.open()
 
     def mostrar_popup_error(self, mensaje):
-        popup = Popup(title='Error', content=Label(text=mensaje), size_hint=(0.8, 0.4))
+        popup = Popup(title='Error', content=Label(text=mensaje, font_size=40), size_hint=(0.8, 0.4))
         popup.open()
 
 class FormularioApp(App):
