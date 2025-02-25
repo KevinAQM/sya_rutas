@@ -5,7 +5,7 @@
 <FormularioChofer>:
     fecha_input: fecha_input
     nombre_input: nombre_input
-    vehiculo_input: vehiculo_input
+    vehiculo_input: vehiculo_input  # Referencia al TextInput del vehículo
     placa_input: placa_input
     ubicacion_inicial_input: ubicacion_inicial_input
     ubicacion_final_input: ubicacion_final_input
@@ -17,10 +17,10 @@
 
     orientation: 'vertical'
     padding: 30
-    spacing: 20
+    spacing: 40
     canvas.before:
         Color:
-            rgba: 0.9, 0.9, 0.9, 1  # Fondo gris claro
+            rgba: 0.9, 0.9, 0.9, 1
         Rectangle:
             pos: self.pos
             size: self.size
@@ -28,19 +28,27 @@
     Label:
         text: "Formulario para Choferes"
         font_size: 60
-        color: 0, 0.5, 0.8, 1  # Azul moderno
+        color: 0, 0.5, 0.8, 1
         bold: True
         size_hint_y: None
-        height: 60
+        height: 80
+        padding_y: 20
+        canvas.before:
+            Color:
+                rgba: 0.9, 0.9, 0.9, 1
+            Rectangle:
+                pos: self.pos
+                size: self.size
 
     ScrollView:
         do_scroll_x: False
         BoxLayout:
             orientation: 'vertical'
-            spacing: 20
+            spacing: 30
             size_hint_y: None
             height: self.minimum_height
-            # Campo Fecha
+
+            # Fecha
             BoxLayout:
                 size_hint_y: None
                 height: 70
@@ -60,10 +68,11 @@
                     size_hint_x: 0.7
                     canvas.before:
                         Color:
-                            rgba: 0, 0.5, 0.8, 1  # Borde azul
+                            rgba: 0, 0.5, 0.8, 1
                         Line:
                             rounded_rectangle: (self.x, self.y, self.width, self.height, 10)
-            # Campo Nombre Chofer
+
+            # Nombre Chofer
             BoxLayout:
                 size_hint_y: None
                 height: 70
@@ -86,7 +95,8 @@
                             rgba: 0, 0.5, 0.8, 1
                         Line:
                             rounded_rectangle: (self.x, self.y, self.width, self.height, 10)
-            # Campo Vehículo
+
+            # Vehículo
             BoxLayout:
                 size_hint_y: None
                 height: 70
@@ -96,7 +106,7 @@
                     size_hint_x: 0.3
                     font_size: 40
                     color: 0, 0, 0, 1
-                TextInput:
+                TextInput:  # TextInput para el vehículo
                     id: vehiculo_input
                     multiline: False
                     font_size: 40
@@ -109,7 +119,8 @@
                             rgba: 0, 0.5, 0.8, 1
                         Line:
                             rounded_rectangle: (self.x, self.y, self.width, self.height, 10)
-            # Campo Placa
+
+            # Placa
             BoxLayout:
                 size_hint_y: None
                 height: 70
@@ -132,7 +143,8 @@
                             rgba: 0, 0.5, 0.8, 1
                         Line:
                             rounded_rectangle: (self.x, self.y, self.width, self.height, 10)
-            # Campo Ubicación Inicial
+
+            # Ubicación Inicial
             BoxLayout:
                 size_hint_y: None
                 height: 70
@@ -155,7 +167,8 @@
                             rgba: 0, 0.5, 0.8, 1
                         Line:
                             rounded_rectangle: (self.x, self.y, self.width, self.height, 10)
-            # Campo Ubicación Final
+
+            # Ubicación Final
             BoxLayout:
                 size_hint_y: None
                 height: 70
@@ -178,7 +191,8 @@
                             rgba: 0, 0.5, 0.8, 1
                         Line:
                             rounded_rectangle: (self.x, self.y, self.width, self.height, 10)
-            # Campo Hora Salida
+
+            # Hora Salida
             BoxLayout:
                 size_hint_y: None
                 height: 70
@@ -202,7 +216,8 @@
                             rgba: 0, 0.5, 0.8, 1
                         Line:
                             rounded_rectangle: (self.x, self.y, self.width, self.height, 10)
-            # Campo Hora Llegada
+
+            # Hora Llegada
             BoxLayout:
                 size_hint_y: None
                 height: 70
@@ -226,7 +241,24 @@
                             rgba: 0, 0.5, 0.8, 1
                         Line:
                             rounded_rectangle: (self.x, self.y, self.width, self.height, 10)
-            # Campo Kilometraje Inicial
+            # Foto km Inicial
+            BoxLayout:
+                size_hint_y: None
+                height: 70
+                spacing: 10
+                Label:
+                    text: "Foto km Inicial:"
+                    size_hint_x: 0.3
+                    font_size: 40
+                    color: 0, 0, 0, 1
+                Button:
+                    text: "Subir Imagen"
+                    size_hint_x: 0.7
+                    font_size: 40
+                    background_color: root.btn_km_inicial_color  # Bind to the property
+                    on_press: root.seleccionar_foto_km_inicial()
+
+            # Km Inicial
             BoxLayout:
                 size_hint_y: None
                 height: 70
@@ -250,7 +282,25 @@
                             rgba: 0, 0.5, 0.8, 1
                         Line:
                             rounded_rectangle: (self.x, self.y, self.width, self.height, 10)
-            # Campo Kilometraje Final
+
+            # Foto km Final
+            BoxLayout:
+                size_hint_y: None
+                height: 70
+                spacing: 10
+                Label:
+                    text: "Foto km Final:"
+                    size_hint_x: 0.3
+                    font_size: 40
+                    color: 0, 0, 0, 1
+                Button:
+                    text: "Subir Imagen"
+                    size_hint_x: 0.7
+                    font_size: 40
+                    background_color: root.btn_km_final_color  # Bind to the property
+                    on_press: root.seleccionar_foto_km_final()
+
+            # Km Final
             BoxLayout:
                 size_hint_y: None
                 height: 70
@@ -274,10 +324,11 @@
                             rgba: 0, 0.5, 0.8, 1
                         Line:
                             rounded_rectangle: (self.x, self.y, self.width, self.height, 10)
-            # Campo Comentarios
+
+            # Comentarios
             BoxLayout:
                 size_hint_y: None
-                height: 120
+                height: 120  # Adjust as needed
                 spacing: 10
                 Label:
                     text: "Comentarios:"
@@ -297,18 +348,26 @@
                             rgba: 0, 0.5, 0.8, 1
                         Line:
                             rounded_rectangle: (self.x, self.y, self.width, self.height, 10)
-    Button:
-        text: "Enviar"
+
+    BoxLayout:
+        orientation: 'horizontal'
         size_hint_y: None
         height: 70
-        font_size: 44
-        background_color: 0, 0.5, 0.8, 1  # Azul moderno
-        color: 1, 1, 1, 1
-        on_press: root.enviar_datos()
-        canvas.before:
-            Color:
-                rgba: 0, 0.4, 0.7, 1
-            RoundedRectangle:
-                pos: self.pos
-                size: self.size
-                radius: [10]
+        padding: [0, 0]
+        pos_hint: {'center_x': 0.5}
+        Button:
+            text: "Enviar"
+            size_hint_x: 0.5
+            size_hint_y: None
+            height: 70
+            font_size: 44
+            background_color: 0, 0.5, 0.8, 1
+            color: 1, 1, 1, 1
+            on_press: root.enviar_datos()
+            canvas.before:
+                Color:
+                    rgba: 0, 0.4, 0.7, 1
+                RoundedRectangle:
+                    pos: self.pos
+                    size: self.size
+                    radius: [10]
