@@ -328,7 +328,7 @@
             # Comentarios
             BoxLayout:
                 size_hint_y: None
-                height: 120  # Adjust as needed
+                height: 140  # Adjust as needed
                 spacing: 10
                 Label:
                     text: "Comentarios:"
@@ -352,15 +352,15 @@
     BoxLayout:
         orientation: 'horizontal'
         size_hint_y: None
-        height: 70
+        height: 140
         padding: [0, 0]
         pos_hint: {'center_x': 0.5}
         Button:
             text: "Enviar"
             size_hint_x: 0.5
             size_hint_y: None
-            height: 70
-            font_size: 44
+            height: 120
+            font_size: 60
             background_color: 0, 0.5, 0.8, 1
             color: 1, 1, 1, 1
             on_press: root.enviar_datos()

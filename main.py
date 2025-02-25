@@ -20,13 +20,19 @@ import logging
 from kivy.uix.dropdown import DropDown
 from kivy.uix.textinput import TextInput
 from kivy.metrics import dp  # Import dp for device-independent pixels
+from kivy.core.window import Window  # Import Window
+from kivy.animation import Animation
 
 
 if platform == "android":
-    from android.permissions import request_permissions, Permission
-    request_permissions([Permission.READ_EXTERNAL_STORAGE,
-                        Permission.WRITE_EXTERNAL_STORAGEclass FormularioChofer(BoxLayout):
+    try:
+        from android.permissions import request_permissions, Permission
+        request_permissions([Permission.READ_EXTERNAL_STORAGE,
+                           Permission.WRITE_EXTERNAL_STORAGE])
+    except ImportError:
+        pass
 
+class FormularioChofer(BoxLayout):
     fecha_input = ObjectProperty(None)
     nombre_input = ObjectProperty(None)
     vehiculo_input = ObjectProperty(None)
@@ -52,69 +58,114 @@ if platform == "android":
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        Clock.schedule_once(self.store_original_position, 0)
         Clock.schedule_once(self.set_fecha_actual)
         Clock.schedule_once(self.setup_dropdowns)
+        Clock.schedule_once(self.setup_comentarios)
         self.conductores = []  # Store the full list of conductors
         self.vehiculos = []  # Store the full list of vehicles
 
+    def store_original_position(self, dt):
+        self.original_y = self.y
+
+    def setup_comentarios(self, dt):
+        """Configura el comportamiento del campo de comentarios."""
+        self.comentarios_input.bind(
+            focus=self.on_comentarios_focus
+        )
+
+    def on_comentarios_focus(self, instance, value):
+        offset = 250
+        if value:
+            Animation(y=self.y + offset, d=0.3).start(self)
+        else:
+            # Reponer a la posición original
+            Animation(y=self.original_y, d=0.3).start(self)
 
     def set_fecha_actual(self, dt):
         self.fecha_input.text = datetime.now().strftime("%Y-%m-%d")
 
     def setup_dropdowns(self, dt):
-        self.dropdown_chofer = DropDown()
-        self.dropdown_vehiculo = DropDown()
-
-        self.nombre_input.bind(text=self.on_nombre_text) # Bind to text change instead of focus
+        self.dropdown_chofer = DropDown(
+            auto_width=False,
+            width=dp(300),
+            max_height=dp(300)
+        )
+        self.dropdown_vehiculo = DropDown(
+            auto_width=False,
+            width=dp(300),
+            max_height=dp(300)
+        )
+        
+        self.nombre_input.bind(text=self.on_nombre_text)
         self.vehiculo_input.bind(text=self.on_vehiculo_text)
-
+        
         self.cargar_conductores()
         self.cargar_vehiculos()
 
     def on_nombre_text(self, instance, value):
         """Filtra y muestra el dropdown de conductores según el texto ingresado."""
-        self.dropdown_chofer.dismiss()  # Asegura que el dropdown esté cerrado
         self.dropdown_chofer.clear_widgets()  # Limpia los botones anteriores
-        filtered_conductores = [
-            conductor for conductor in self.conductores
-            if value.lower() in conductor.lower()
-        ]
-        if filtered_conductores:
-            for conductor in filtered_conductores:
-                btn = Button(text=conductor, size_hint_y=None, height=dp(44))
-                btn.bind(on_release=lambda btn: self.seleccionar_conductor(btn.text))
-                self.dropdown_chofer.add_widget(btn)
-            self.dropdown_chofer.open(instance)
+        
+        # Solo proceder si hay texto ingresado
+        if value.strip():
+            filtered_conductores = [
+                conductor for conductor in self.conductores
+                if value.lower() in conductor.lower()
+            ]
+            if filtered_conductores:
+                for conductor in filtered_conductores:
+                    btn = Button(
+                        text=conductor, 
+                        size_hint_y=None, 
+                        height=dp(44),
+                        background_normal='',
+                        background_color=(0.2, 0.2, 0.2, 1)  # Color de fondo claro
+                    )
+                    btn.bind(on_release=lambda btn: self.seleccionar_conductor(btn.text))
+                    self.dropdown_chofer.add_widget(btn)
+                
+                # Si el dropdown no está abierto, abrirlo
+                if not self.dropdown_chofer.attach_to:
+                    self.dropdown_chofer.open(instance)
+            else:
+                self.dropdown_chofer.dismiss()
         else:
             self.dropdown_chofer.dismiss()
 
     def on_vehiculo_text(self, instance, value):
         """Filtra y muestra el dropdown de vehículos según el texto ingresado."""
-        self.dropdown_vehiculo.dismiss()  # Asegura que el dropdown esté cerrado
         self.dropdown_vehiculo.clear_widgets()  # Limpia los botones anteriores
-        filtered_vehiculos = [
-            vehiculo for vehiculo in self.vehiculos
-            if value.lower() in f"{vehiculo['tipo_vehiculo']} -- {vehiculo['placa']}".lower()
-        ]
-        if filtered_vehiculos:
-            for vehiculo in filtered_vehiculos:
-                btn_text = f"{vehiculo['tipo_vehiculo']} -- {vehiculo['placa']}"
-                btn = Button(text=btn_text, size_hint_y=None, height=dp(44))
-                btn.bind(on_release=lambda btn, v=vehiculo: self.seleccionar_vehiculo(v))
-                self.dropdown_vehiculo.add_widget(btn)
-            self.dropdown_vehiculo.open(instance)
+        
+        # Solo proceder si hay texto ingresado
+        if value.strip():
+            filtered_vehiculos = [
+                vehiculo for vehiculo in self.vehiculos
+                if value.lower() in f"{vehiculo['tipo_vehiculo']} | {vehiculo['placa']}".lower()
+            ]
+            if filtered_vehiculos:
+                for vehiculo in filtered_vehiculos:
+                    # Crear texto combinado de vehículo y placa
+                    texto_combinado = f"{vehiculo['tipo_vehiculo']} | {vehiculo['placa']}"
+                    btn = Button(
+                        text=texto_combinado,
+                        size_hint_y=None, 
+                        height=dp(44),
+                        background_normal='',
+                        background_color=(0.2, 0.2, 0.2, 1)
+                    )
+                    btn.bind(on_release=lambda btn, v=vehiculo: self.seleccionar_vehiculo(v))
+                    self.dropdown_vehiculo.add_widget(btn)
+                
+                # Si el dropdown no está abierto, abrirlo
+                if not self.dropdown_vehiculo.attach_to:
+                    self.dropdown_vehiculo.open(instance)
+            else:
+                self.dropdown_vehiculo.dismiss()
         else:
             self.dropdown_vehiculo.dismiss()
+            self.placa_input.text = ""  # Limpiar el campo placa si se borra todo el texto
         
-    def show_dropdown_chofer(self, instance, value):
-        # This is no longer needed.
-        pass
-
-    def show_dropdown_vehiculo(self, instance, value):
-        # This is no longer needed
-        pass
-
-
 
     def cargar_conductores(self):
         url = "http://34.67.103.132:5000/api/conductores"
