@@ -77,8 +77,8 @@ def inicializar_excel():
         wb_choferes = openpyxl.Workbook()
         ws_choferes = wb_choferes.active
         ws_choferes.title = "Registros"
-        headers_choferes = ["Fecha", "Nombre Chofer", "Vehículo", "Placa", "Ubicación Inicial", "Ubicación Final",
-                            "Hora Salida", "Hora Llegada", "Kilometraje Inicial", "Kilometraje Final", "Comentarios"]
+        headers_choferes = ["Nombre del Chofer", "Vehículo", "Placa", "Fecha de Salida", "Hora de Salida", 
+            "Ubicación Inicial", "Kilometraje Inicial", "Fotos de Inicio", "Observaciones"]
         ws_choferes.append(headers_choferes)
         wb_choferes.save(REGISTROS_CHOFERES_EXCEL)
     else:
@@ -514,37 +514,30 @@ def procesar_datos_choferes(data, files):
         wb_choferes = openpyxl.load_workbook(REGISTROS_CHOFERES_EXCEL)
         ws_choferes = wb_choferes.active
 
+        # Nuevo orden de los campos:
         fila = [
-            data.get("fecha"),
             data.get("nombre_chofer"),
             data.get("vehiculo"),
             data.get("placa"),
-            data.get("ubicacion_inicial"),
-            data.get("ubicacion_final"),
+            data.get("fecha_salida"),       # antes era "fecha"
             data.get("hora_salida"),
-            data.get("hora_llegada"),
+            data.get("ubicacion_inicial"),
             data.get("km_inicial"),
-            data.get("km_final"),
-            data.get("comentarios")
+            data.get("observaciones")       # antes era "comentarios"
         ]
         ws_choferes.append(fila)
         wb_choferes.save(REGISTROS_CHOFERES_EXCEL)
 
-        # --- Procesar las imágenes (reutilizando código) ---
+        # --- Procesar la imagen de Fotos de Inicio ---
         if not os.path.exists(FOTOS_KM_DIR):
             os.makedirs(FOTOS_KM_DIR)
 
-        foto_km_inicial = files.get("foto_km_inicial")
-        if (foto_km_inicial):
-            path_inicial = os.path.join(FOTOS_KM_DIR, foto_km_inicial.filename)
-            foto_km_inicial.save(path_inicial)
-
-
-        foto_km_final = files.get("foto_km_final")
-        if (foto_km_final):
-            path_final = os.path.join(FOTOS_KM_DIR, foto_km_final.filename)
-            foto_km_final.save(path_final)
-
+        # Ahora la imagen se recibe con el nombre "fotos_inicio"
+        foto_inicio = files.get("fotos_inicio")
+        if foto_inicio:
+            path_inicio = os.path.join(FOTOS_KM_DIR, foto_inicio.filename)
+            foto_inicio.save(path_inicio)
+            # Aquí podrías actualizar el Excel con el nombre del archivo si lo requieres
 
         logging.info("Datos de choferes recibidos y guardados correctamente.")
         return True

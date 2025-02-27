@@ -3,17 +3,15 @@
 #:import Factory kivy.factory.Factory
 
 <FormularioChofer>:
-    fecha_input: fecha_input
+
     nombre_input: nombre_input
-    vehiculo_input: vehiculo_input  # Referencia al TextInput del vehículo
+    vehiculo_input: vehiculo_input
     placa_input: placa_input
-    ubicacion_inicial_input: ubicacion_inicial_input
-    ubicacion_final_input: ubicacion_final_input
+    fecha_salida_input: fecha_salida_input
     hora_salida_input: hora_salida_input
-    hora_llegada_input: hora_llegada_input
+    ubicacion_inicial_input: ubicacion_inicial_input
     km_inicial_input: km_inicial_input
-    km_final_input: km_final_input
-    comentarios_input: comentarios_input
+    observaciones_input: observaciones_input
 
     orientation: 'vertical'
     padding: 30
@@ -48,38 +46,14 @@
             size_hint_y: None
             height: self.minimum_height
 
-            # Fecha
+            # Nombre del Chofer
             BoxLayout:
                 size_hint_y: None
                 height: 70
                 spacing: 10
                 Label:
-                    text: "Fecha:"
-                    size_hint_x: 0.3
-                    font_size: 40
-                    color: 0, 0, 0, 1
-                TextInput:
-                    id: fecha_input
-                    multiline: False
-                    font_size: 40
-                    background_color: 1, 1, 1, 1
-                    foreground_color: 0, 0, 0, 1
-                    padding: [15, 15]
-                    size_hint_x: 0.7
-                    canvas.before:
-                        Color:
-                            rgba: 0, 0.5, 0.8, 1
-                        Line:
-                            rounded_rectangle: (self.x, self.y, self.width, self.height, 10)
-
-            # Nombre Chofer
-            BoxLayout:
-                size_hint_y: None
-                height: 70
-                spacing: 10
-                Label:
-                    text: "Nombre Chofer:"
-                    size_hint_x: 0.3
+                    text: "Nombre del Chofer:"
+                    size_hint_x: 0.4
                     font_size: 40
                     color: 0, 0, 0, 1
                 TextInput:
@@ -89,7 +63,7 @@
                     background_color: 1, 1, 1, 1
                     foreground_color: 0, 0, 0, 1
                     padding: [15, 15]
-                    size_hint_x: 0.7
+                    size_hint_x: 0.6
                     canvas.before:
                         Color:
                             rgba: 0, 0.5, 0.8, 1
@@ -103,7 +77,7 @@
                 spacing: 10
                 Label:
                     text: "Vehículo:"
-                    size_hint_x: 0.3
+                    size_hint_x: 0.4
                     font_size: 40
                     color: 0, 0, 0, 1
                 TextInput:  # TextInput para el vehículo
@@ -113,7 +87,7 @@
                     background_color: 1, 1, 1, 1
                     foreground_color: 0, 0, 0, 1
                     padding: [15, 15]
-                    size_hint_x: 0.7
+                    size_hint_x: 0.6
                     canvas.before:
                         Color:
                             rgba: 0, 0.5, 0.8, 1
@@ -127,7 +101,7 @@
                 spacing: 10
                 Label:
                     text: "Placa:"
-                    size_hint_x: 0.3
+                    size_hint_x: 0.4
                     font_size: 40
                     color: 0, 0, 0, 1
                 TextInput:
@@ -137,7 +111,57 @@
                     background_color: 1, 1, 1, 1
                     foreground_color: 0, 0, 0, 1
                     padding: [15, 15]
-                    size_hint_x: 0.7
+                    size_hint_x: 0.6
+                    canvas.before:
+                        Color:
+                            rgba: 0, 0.5, 0.8, 1
+                        Line:
+                            rounded_rectangle: (self.x, self.y, self.width, self.height, 10)
+
+            # Fecha
+            BoxLayout:
+                size_hint_y: None
+                height: 70
+                spacing: 10
+                Label:
+                    text: "Fecha:"
+                    size_hint_x: 0.4
+                    font_size: 40
+                    color: 0, 0, 0, 1
+                TextInput:
+                    id: fecha_salida_input
+                    multiline: False
+                    font_size: 40
+                    background_color: 1, 1, 1, 1
+                    foreground_color: 0, 0, 0, 1
+                    padding: [15, 15]
+                    size_hint_x: 0.6
+                    canvas.before:
+                        Color:
+                            rgba: 0, 0.5, 0.8, 1
+                        Line:
+                            rounded_rectangle: (self.x, self.y, self.width, self.height, 10)
+
+
+            # Hora de Salida
+            BoxLayout:
+                size_hint_y: None
+                height: 70
+                spacing: 10
+                Label:
+                    text: "Hora de Salida"
+                    size_hint_x: 0.4
+                    font_size: 40
+                    color: 0, 0, 0, 1
+                TextInput:
+                    id: hora_salida_input
+                    multiline: False
+                    hint_text: "HH:MM"
+                    font_size: 40
+                    background_color: 1, 1, 1, 1
+                    foreground_color: 0, 0, 0, 1
+                    padding: [15, 15]
+                    size_hint_x: 0.6
                     canvas.before:
                         Color:
                             rgba: 0, 0.5, 0.8, 1
@@ -151,7 +175,7 @@
                 spacing: 10
                 Label:
                     text: "Ubicación Inicial:"
-                    size_hint_x: 0.3
+                    size_hint_x: 0.4
                     font_size: 40
                     color: 0, 0, 0, 1
                 TextInput:
@@ -161,111 +185,21 @@
                     background_color: 1, 1, 1, 1
                     foreground_color: 0, 0, 0, 1
                     padding: [15, 15]
-                    size_hint_x: 0.7
+                    size_hint_x: 0.6
                     canvas.before:
                         Color:
                             rgba: 0, 0.5, 0.8, 1
                         Line:
                             rounded_rectangle: (self.x, self.y, self.width, self.height, 10)
 
-            # Ubicación Final
+            # Kilometraje Inicial
             BoxLayout:
                 size_hint_y: None
                 height: 70
                 spacing: 10
                 Label:
-                    text: "Ubicación Final:"
-                    size_hint_x: 0.3
-                    font_size: 40
-                    color: 0, 0, 0, 1
-                TextInput:
-                    id: ubicacion_final_input
-                    multiline: False
-                    font_size: 40
-                    background_color: 1, 1, 1, 1
-                    foreground_color: 0, 0, 0, 1
-                    padding: [15, 15]
-                    size_hint_x: 0.7
-                    canvas.before:
-                        Color:
-                            rgba: 0, 0.5, 0.8, 1
-                        Line:
-                            rounded_rectangle: (self.x, self.y, self.width, self.height, 10)
-
-            # Hora Salida
-            BoxLayout:
-                size_hint_y: None
-                height: 70
-                spacing: 10
-                Label:
-                    text: "Hora Salida:"
-                    size_hint_x: 0.3
-                    font_size: 40
-                    color: 0, 0, 0, 1
-                TextInput:
-                    id: hora_salida_input
-                    multiline: False
-                    hint_text: "HH:MM"
-                    font_size: 40
-                    background_color: 1, 1, 1, 1
-                    foreground_color: 0, 0, 0, 1
-                    padding: [15, 15]
-                    size_hint_x: 0.7
-                    canvas.before:
-                        Color:
-                            rgba: 0, 0.5, 0.8, 1
-                        Line:
-                            rounded_rectangle: (self.x, self.y, self.width, self.height, 10)
-
-            # Hora Llegada
-            BoxLayout:
-                size_hint_y: None
-                height: 70
-                spacing: 10
-                Label:
-                    text: "Hora Llegada:"
-                    size_hint_x: 0.3
-                    font_size: 40
-                    color: 0, 0, 0, 1
-                TextInput:
-                    id: hora_llegada_input
-                    multiline: False
-                    hint_text: "HH:MM"
-                    font_size: 40
-                    background_color: 1, 1, 1, 1
-                    foreground_color: 0, 0, 0, 1
-                    padding: [15, 15]
-                    size_hint_x: 0.7
-                    canvas.before:
-                        Color:
-                            rgba: 0, 0.5, 0.8, 1
-                        Line:
-                            rounded_rectangle: (self.x, self.y, self.width, self.height, 10)
-            # Foto km Inicial
-            BoxLayout:
-                size_hint_y: None
-                height: 70
-                spacing: 10
-                Label:
-                    text: "Foto km Inicial:"
-                    size_hint_x: 0.3
-                    font_size: 40
-                    color: 0, 0, 0, 1
-                Button:
-                    text: "Subir Imagen"
-                    size_hint_x: 0.7
-                    font_size: 40
-                    background_color: root.btn_km_inicial_color  # Bind to the property
-                    on_press: root.seleccionar_foto_km_inicial()
-
-            # Km Inicial
-            BoxLayout:
-                size_hint_y: None
-                height: 70
-                spacing: 10
-                Label:
-                    text: "Km Inicial:"
-                    size_hint_x: 0.3
+                    text: "Kilometraje Inicial:"
+                    size_hint_x: 0.4
                     font_size: 40
                     color: 0, 0, 0, 1
                 TextInput:
@@ -276,73 +210,48 @@
                     background_color: 1, 1, 1, 1
                     foreground_color: 0, 0, 0, 1
                     padding: [15, 15]
-                    size_hint_x: 0.7
+                    size_hint_x: 0.6
                     canvas.before:
                         Color:
                             rgba: 0, 0.5, 0.8, 1
                         Line:
                             rounded_rectangle: (self.x, self.y, self.width, self.height, 10)
 
-            # Foto km Final
+            # Fotos de Inicio
             BoxLayout:
                 size_hint_y: None
                 height: 70
                 spacing: 10
                 Label:
-                    text: "Foto km Final:"
-                    size_hint_x: 0.3
+                    text: "Fotos de Inicio:"
+                    size_hint_x: 0.4
                     font_size: 40
                     color: 0, 0, 0, 1
                 Button:
                     text: "Subir Imagen"
-                    size_hint_x: 0.7
+                    size_hint_x: 0.6
                     font_size: 40
-                    background_color: root.btn_km_final_color  # Bind to the property
-                    on_press: root.seleccionar_foto_km_final()
+                    background_color: root.btn_km_inicial_color  # Bind to the property
+                    on_press: root.seleccionar_foto_km_inicial()
 
-            # Km Final
-            BoxLayout:
-                size_hint_y: None
-                height: 70
-                spacing: 10
-                Label:
-                    text: "Km Final:"
-                    size_hint_x: 0.3
-                    font_size: 40
-                    color: 0, 0, 0, 1
-                TextInput:
-                    id: km_final_input
-                    multiline: False
-                    font_size: 40
-                    input_filter: 'float'
-                    background_color: 1, 1, 1, 1
-                    foreground_color: 0, 0, 0, 1
-                    padding: [15, 15]
-                    size_hint_x: 0.7
-                    canvas.before:
-                        Color:
-                            rgba: 0, 0.5, 0.8, 1
-                        Line:
-                            rounded_rectangle: (self.x, self.y, self.width, self.height, 10)
-
-            # Comentarios
+            # Observaciones
             BoxLayout:
                 size_hint_y: None
                 height: 140  # Adjust as needed
                 spacing: 10
                 Label:
-                    text: "Comentarios:"
-                    size_hint_x: 0.3
+                    text: "Observaciones:"
+                    size_hint_x: 0.4
                     font_size: 40
                     color: 0, 0, 0, 1
                 TextInput:
-                    id: comentarios_input
+                    id: observaciones_input
                     multiline: True
                     font_size: 40
                     background_color: 1, 1, 1, 1
                     foreground_color: 0, 0, 0, 1
                     padding: [15, 15]
-                    size_hint_x: 0.7
+                    size_hint_x: 0.6
                     canvas.before:
                         Color:
                             rgba: 0, 0.5, 0.8, 1
@@ -364,6 +273,7 @@
             background_color: 0, 0.5, 0.8, 1
             color: 1, 1, 1, 1
             on_press: root.enviar_datos()
+            disabled: root.enviar_btn_disabled
             canvas.before:
                 Color:
                     rgba: 0, 0.4, 0.7, 1
