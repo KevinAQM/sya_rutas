@@ -552,7 +552,31 @@ def procesar_datos_choferes(data, files):
                 row_idx = int(row_idx)
                 if row_idx <= 1 or row_idx > ws_choferes.max_row:
                     return False, "Índice de fila inválido."
-                filename_fin = f"{nombre_chofer.replace(' ', '_')}_{placa.replace(' ', '_')}_fin_{fecha_actual_str}.{foto_fin.filename.split('.')[-1]}"
+
+                # Leer la fecha de llegada desde el Excel usando row_idx (columna 9 - 'Fecha de Llegada')
+                fecha_llegada_excel = ws_choferes.cell(row=row_idx, column=9).value
+                if isinstance(fecha_llegada_excel, datetime): # Si es un objeto datetime
+                    fecha_llegada_str = fecha_llegada_excel.strftime("%Y-%m-%d") # Formatear a string YYYY-MM-DD
+                    fecha_llegada_filename = fecha_llegada_str.replace("-", "") # Formatear a YYYYMMDD
+                elif isinstance(fecha_llegada_excel, str): # Si ya es un string (por si acaso)
+                    try:
+                        fecha_llegada_dt = datetime.strptime(fecha_llegada_excel, "%Y-%m-%d") # Intentar parsear
+                        fecha_llegada_str = fecha_llegada_dt.strftime("%Y-%m-%d")
+                        fecha_llegada_filename = fecha_llegada_str.replace("-", "")
+                    except ValueError: # Si el string no tiene el formato esperado
+                        fecha_llegada_filename = "" # fallback, aunque deberia ser manejado mejor segun tu formato de fecha en excel
+                else: # Si no es ni datetime ni string (manejar otros casos si es necesario)
+                    fecha_llegada_filename = "" # fallback,  manejar otros casos si es necesario
+
+                nombre_chofer_filename = data.get("nombre_chofer", "").lower().replace(" ", "-") # Para nombre foto llegada
+                placa_filename = data.get("placa", "").replace(" ", "-") # Para placa foto llegada
+
+
+                original_extension_fin = ""
+                if foto_fin.filename:
+                    original_extension_fin = os.path.splitext(foto_fin.filename)[1]
+
+                filename_fin = f"{nombre_chofer_filename}_{placa_filename}_{fecha_llegada_filename}_llegada{original_extension_fin}"
                 path_fin = os.path.join(FOTOS_KM_DIR, filename_fin)
                 foto_fin.save(path_fin)
                 logging.info(f"Foto de fin guardada en {path_fin} para fila {row_idx}")
@@ -576,7 +600,15 @@ def procesar_datos_choferes(data, files):
             ws_choferes.append(fila_salida)
             wb_choferes.save(REGISTROS_CHOFERES_EXCEL)
             if foto_inicio:
-                filename_inicio = f"{nombre_chofer.replace(' ', '_')}_{placa.replace(' ', '_')}_inicio_{fecha_actual_str}.{foto_inicio.filename.split('.')[-1]}"
+                nombre_chofer_filename = data.get("nombre_chofer", "").lower().replace(" ", "-") # Para nombre foto salida
+                placa_filename = data.get("placa", "").replace(" ", "-") # Para placa foto salida
+                fecha_salida_filename = data.get("fecha_salida", "").replace("-", "") # Para fecha foto salida
+
+                original_extension_inicio = ""
+                if foto_inicio.filename:
+                    original_extension_inicio = os.path.splitext(foto_inicio.filename)[1]
+
+                filename_inicio = f"{nombre_chofer_filename}_{placa_filename}_{fecha_salida_filename}_salida{original_extension_inicio}"
                 path_inicio = os.path.join(FOTOS_KM_DIR, filename_inicio)
                 foto_inicio.save(path_inicio)
                 logging.info(f"Foto de inicio guardada en {path_inicio}")
@@ -609,7 +641,7 @@ def procesar_datos_choferes(data, files):
                 else:
                     return False, "El último registro ya tiene datos de llegada. No puedes actualizarlo."
             else:
-                return False, "No has enviado el formulario de Datos de Salida correspondiente."
+                return False, "No has enviado el Formulario de Datos de Salida correspondiente."
 
     except Exception as e:
         logging.error(f"Error al procesar datos de choferes: {str(e)}")

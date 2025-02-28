@@ -20,6 +20,9 @@ from kivy.metrics import dp
 from kivy.animation import Animation
 from kivy.uix.screenmanager import ScreenManager, Screen
 
+url_conductores = "http://34.67.103.132:5000/api/conductores"
+url_vehiculos = "http://34.67.103.132:5000/api/vehiculos_info"
+
 
 if platform == "android":
     try:
@@ -181,7 +184,7 @@ class FormularioSalida(BoxLayout, Screen):
 
     def cargar_conductores(self):
         """Carga la lista de conductores desde el servidor."""
-        url = "http://34.67.103.132:5000/api/conductores"  # Cambia a la IP de tu servidor
+        url = url_conductores
         try:
             response = requests.get(url, timeout=10)
             response.raise_for_status()
@@ -201,7 +204,7 @@ class FormularioSalida(BoxLayout, Screen):
 
     def cargar_vehiculos(self):
         """Carga la lista de vehículos desde el servidor."""
-        url = "http://34.67.103.132:5000/api/vehiculos_info"  # Cambia a la IP de tu servidor
+        url = url_vehiculos
         try:
             response = requests.get(url, timeout=10)
             response.raise_for_status()
@@ -303,7 +306,7 @@ class FormularioSalida(BoxLayout, Screen):
         try:
             response = requests.post(url, data=payload, files=files, timeout=30)
             response.raise_for_status()
-            self.mostrar_popup_exito("Datos de salida enviados exitosamente.")
+            self.mostrar_popup_exito("Datos de Salida enviados exitosamente.")
             self.enviar_btn_disabled = True
 
         except requests.exceptions.RequestException as e:
@@ -502,7 +505,7 @@ class FormularioLlegada(BoxLayout, Screen):
 
     def cargar_conductores(self):
         """Carga la lista de conductores desde el servidor."""
-        url = "http://34.67.103.132:5000/api/conductores"  # Cambia a la IP de tu servidor
+        url = url_conductores
         try:
             response = requests.get(url, timeout=10)
             response.raise_for_status()
@@ -522,7 +525,7 @@ class FormularioLlegada(BoxLayout, Screen):
 
     def cargar_vehiculos(self):
         """Carga la lista de vehículos desde el servidor."""
-        url = "http://34.67.103.132:5000/api/vehiculos_info"  # Cambia a la IP de tu servidor
+        url = url_vehiculos
         try:
             response = requests.get(url, timeout=10)
             response.raise_for_status()
@@ -635,7 +638,7 @@ class FormularioLlegada(BoxLayout, Screen):
                         response_foto.raise_for_status()
                         data_foto = response_foto.json()
                         if data_foto.get('status') == 'success':
-                            self.mostrar_popup_exito("Datos de llegada y foto enviados exitosamente.")
+                            self.mostrar_popup_exito("Datos de Llegada enviados exitosamente.")
                         else:
                             self.mostrar_popup_error(data_foto.get('message', 'Error al enviar la foto.'))
                     except requests.exceptions.RequestException as e:
