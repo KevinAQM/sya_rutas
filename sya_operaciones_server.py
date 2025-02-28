@@ -547,40 +547,34 @@ def procesar_datos_choferes(data, files):
         foto_fin = files.get("foto_km_final")
 
         # Si solo se envía row_idx y foto (segunda solicitud para llegada)
-        if row_idx and not tipo_formulario and foto_fin:
+        if row_idx and not tipo_formulario:
             try:
                 row_idx = int(row_idx)
                 if row_idx <= 1 or row_idx > ws_choferes.max_row:
                     return False, "Índice de fila inválido."
 
-                # Leer la fecha de llegada desde el Excel usando row_idx (columna 9 - 'Fecha de Llegada')
+                # Leer la fecha de llegada desde el Excel
                 fecha_llegada_excel = ws_choferes.cell(row=row_idx, column=9).value
-                if isinstance(fecha_llegada_excel, datetime): # Si es un objeto datetime
-                    fecha_llegada_str = fecha_llegada_excel.strftime("%Y-%m-%d") # Formatear a string YYYY-MM-DD
-                    fecha_llegada_filename = fecha_llegada_str.replace("-", "") # Formatear a YYYYMMDD
-                elif isinstance(fecha_llegada_excel, str): # Si ya es un string (por si acaso)
-                    try:
-                        fecha_llegada_dt = datetime.strptime(fecha_llegada_excel, "%Y-%m-%d") # Intentar parsear
-                        fecha_llegada_str = fecha_llegada_dt.strftime("%Y-%m-%d")
-                        fecha_llegada_filename = fecha_llegada_str.replace("-", "")
-                    except ValueError: # Si el string no tiene el formato esperado
-                        fecha_llegada_filename = "" # fallback, aunque deberia ser manejado mejor segun tu formato de fecha en excel
-                else: # Si no es ni datetime ni string (manejar otros casos si es necesario)
-                    fecha_llegada_filename = "" # fallback,  manejar otros casos si es necesario
+                if isinstance(fecha_llegada_excel, datetime):
+                    fecha_llegada_filename = fecha_llegada_excel.strftime("%Y%m%d")
+                elif isinstance(fecha_llegada_excel, str):
+                    fecha_llegada_filename = fecha_llegada_excel.replace("-", "")
+                else:
+                    fecha_llegada_filename = datetime.now().strftime("%Y%m%d")  # Fallback
 
-                nombre_chofer_filename = data.get("nombre_chofer", "").lower().replace(" ", "-") # Para nombre foto llegada
-                placa_filename = data.get("placa", "").replace(" ", "-") # Para placa foto llegada
+                nombre_chofer_filename = data.get("nombre_chofer", "").lower().replace(" ", "-")
+                placa_filename = data.get("placa", "").replace(" ", "-")
 
-
-                original_extension_fin = ""
-                if foto_fin.filename:
-                    original_extension_fin = os.path.splitext(foto_fin.filename)[1]
-
-                filename_fin = f"{nombre_chofer_filename}_{placa_filename}_{fecha_llegada_filename}_llegada{original_extension_fin}"
-                path_fin = os.path.join(FOTOS_KM_DIR, filename_fin)
-                foto_fin.save(path_fin)
-                logging.info(f"Foto de fin guardada en {path_fin} para fila {row_idx}")
-                return True, "Foto de llegada guardada correctamente."
+                for i in range(1, 5):
+                    foto_key = f"foto_km_final_{i}"
+                    foto_fin = files.get(foto_key)
+                    if foto_fin:
+                        original_extension = os.path.splitext(foto_fin.filename)[1] if foto_fin.filename else ".jpg"
+                        filename_fin = f"{nombre_chofer_filename}_{placa_filename}_{fecha_llegada_filename}_llegada_{i}{original_extension}"
+                        path_fin = os.path.join(FOTOS_KM_DIR, filename_fin)
+                        foto_fin.save(path_fin)
+                        logging.info(f"Foto de fin {i} guardada en {path_fin} para fila {row_idx}")
+                return True, "Fotos de llegada guardadas correctamente."
             except ValueError:
                 return False, "Índice de fila debe ser un número entero."
 
@@ -599,19 +593,18 @@ def procesar_datos_choferes(data, files):
             ]
             ws_choferes.append(fila_salida)
             wb_choferes.save(REGISTROS_CHOFERES_EXCEL)
-            if foto_inicio:
-                nombre_chofer_filename = data.get("nombre_chofer", "").lower().replace(" ", "-") # Para nombre foto salida
-                placa_filename = data.get("placa", "").replace(" ", "-") # Para placa foto salida
-                fecha_salida_filename = data.get("fecha_salida", "").replace("-", "") # Para fecha foto salida
-
-                original_extension_inicio = ""
-                if foto_inicio.filename:
-                    original_extension_inicio = os.path.splitext(foto_inicio.filename)[1]
-
-                filename_inicio = f"{nombre_chofer_filename}_{placa_filename}_{fecha_salida_filename}_salida{original_extension_inicio}"
-                path_inicio = os.path.join(FOTOS_KM_DIR, filename_inicio)
-                foto_inicio.save(path_inicio)
-                logging.info(f"Foto de inicio guardada en {path_inicio}")
+            nombre_chofer_filename = data.get("nombre_chofer", "").lower().replace(" ", "-")
+            placa_filename = data.get("placa", "").replace(" ", "-")
+            fecha_salida_filename = data.get("fecha_salida", "").replace("-", "")
+            for i in range(1, 5):
+                foto_key = f"foto_km_inicial_{i}"
+                foto_inicio = files.get(foto_key)
+                if foto_inicio:
+                    original_extension = os.path.splitext(foto_inicio.filename)[1] if foto_inicio.filename else ".jpg"
+                    filename_inicio = f"{nombre_chofer_filename}_{placa_filename}_{fecha_salida_filename}_salida_{i}{original_extension}"
+                    path_inicio = os.path.join(FOTOS_KM_DIR, filename_inicio)
+                    foto_inicio.save(path_inicio)
+                    logging.info(f"Foto de inicio {i} guardada en {path_inicio}")
             logging.info(f"Datos de salida guardados en nueva fila.")
             return True, "Datos de salida guardados correctamente."
 
