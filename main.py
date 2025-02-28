@@ -36,24 +36,6 @@ if platform == "android":
 # Pantalla principal
 class MainScreen(Screen):
     """Pantalla principal con opciones de formulario."""
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        box = BoxLayout(orientation='vertical', padding=50, spacing=50)
-
-        title_label = Label(text="Seleccione una opción:", font_size=60, color=(0, 0.5, 0.8, 1), bold=True, size_hint_y=None, height=100)
-        box.add_widget(title_label)
-
-        salida_button = Button(text="DATOS DE SALIDA", font_size=50, size_hint_y=None, height=200, background_color=(0, 0.5, 0.8, 1), color=(1, 1, 1, 1))
-        salida_button.bind(on_press=self.go_to_salida_form)
-        box.add_widget(salida_button)
-
-        llegada_button = Button(text="DATOS DE LLEGADA", font_size=50, size_hint_y=None, height=200, background_color=(0, 0.5, 0.8, 1), color=(1, 1, 1, 1))
-        llegada_button.bind(on_press=self.go_to_llegada_form)
-        box.add_widget(llegada_button)
-
-        box.add_widget(Label())  # Espacio inferior
-
-        self.add_widget(box)
 
     def go_to_salida_form(self, *args):
         """Navega al formulario de datos de salida."""
@@ -74,6 +56,7 @@ class FormularioSalida(BoxLayout, Screen):
     ubicacion_inicial_input = ObjectProperty(None)
     km_inicial_input = ObjectProperty(None)
     observaciones_salida_input = ObjectProperty(None)
+    file_list_layout_inicio = ObjectProperty(None) # Layout para la lista de archivos de inicio
 
     fotos_inicio_paths = ListProperty([""] * 4)  # Hasta 4 fotos
 
@@ -98,8 +81,6 @@ class FormularioSalida(BoxLayout, Screen):
         Clock.schedule_once(self.setup_observaciones)
         self.conductores = []
         self.vehiculos = []
-        self.fotos_inicio_label = Label(text="Fotos seleccionadas: ninguna", size_hint_y=None, height=50, font_size=dp(20))
-        self.add_widget(self.fotos_inicio_label)
 
     def store_original_position(self, dt):
         """Guarda la posición original del formulario."""
@@ -264,19 +245,81 @@ class FormularioSalida(BoxLayout, Screen):
             if selection:
                 self.fotos_inicio_paths = selection[:4]  # Limitar a 4 imágenes
                 self.btn_km_inicial_color = [0, 0.8, 0, 1]  # Verde
-                nombres = [os.path.basename(path) for path in self.fotos_inicio_paths if path]
-                self.fotos_inicio_label.text = "Fotos seleccionadas: " + ", ".join(nombres)
+                Clock.schedule_once(lambda dt: self.mostrar_popup_fotos_seleccionadas(self.fotos_inicio_paths), 0.4)
             else:
                 self.fotos_inicio_paths = [""] * 4
                 self.btn_km_inicial_color = [0, 0.5, 0.8, 1]
-                self.fotos_inicio_label.text = "Fotos seleccionadas: ninguna"
 
         filechooser.open_file(
             on_selection=on_selection,
             title="Seleccionar Fotos km Inicial",
             filters=[("Image Files", "*.jpg;*.jpeg;*.png")],
-            multiple=True  # Habilitar selección múltiple
+            multiple=True
         )
+
+    def mostrar_popup_fotos_seleccionadas(self, paths):
+        """Muestra un popup con la lista de fotos seleccionadas."""
+        content = BoxLayout(orientation='vertical', padding=10, spacing=10)
+        
+        # Título
+        titulo = Label(
+            text="Fotos seleccionadas:",
+            font_size=dp(20),
+            size_hint_y=None,
+            height=dp(40),
+            color=(0, 0.5, 0.8, 1)
+        )
+        content.add_widget(titulo)
+        
+        # Lista de fotos
+        for path in paths:
+            if path:
+                filename = os.path.basename(path)
+                label = Label(
+                    text=f"• {filename}",
+                    font_size=dp(16),
+                    size_hint_y=None,
+                    height=dp(30),
+                    halign='left',
+                    color=(1, 1, 1, 1)
+                )
+                label.bind(size=label.setter('text_size'))
+                content.add_widget(label)
+        
+        # Botón de cerrar
+        btn = Button(
+            text="Aceptar",
+            size_hint=(None, None),
+            size=(dp(150), dp(50)),
+            pos_hint={'center_x': 0.5},
+            background_color=(0, 0.5, 0.8, 1)
+        )
+        
+        popup = Popup(
+            title='Fotos Seleccionadas',
+            content=content,
+            size_hint=(0.9, None),
+            height=dp(400),
+            auto_dismiss=True
+        )
+        
+        btn.bind(on_release=popup.dismiss)
+        content.add_widget(btn)
+        popup.open()
+
+    def actualizar_lista_fotos_inicio(self):
+        """Actualiza la lista de nombres de archivos de fotos de inicio en la UI."""
+        self.file_list_layout_inicio.clear_widgets()
+        if self.fotos_inicio_paths and any(self.fotos_inicio_paths):
+            for path in self.fotos_inicio_paths:
+                if path:
+                    filename = os.path.basename(path)
+                    label = Label(text=filename, font_size=dp(20), color=(0, 0, 0, 1), halign='left')
+                    self.file_list_layout_inicio.add_widget(label)
+        else:
+            label = Label(text="Ninguna foto seleccionada", font_size=dp(20), color=(0.5, 0.5, 0.5, 1), halign='left')
+            self.file_list_layout_inicio.add_widget(label)
+
 
     def enviar_datos_salida(self):
         """Envía los datos del formulario de salida al servidor."""
@@ -334,7 +377,7 @@ class FormularioSalida(BoxLayout, Screen):
         self.observaciones_salida_input.text = ""
         self.fotos_inicio_paths = [""] * 4
         self.btn_km_inicial_color = [0, 0.5, 0.8, 1]
-        self.fotos_inicio_label.text = "Fotos seleccionadas: ninguna"
+        self.actualizar_lista_fotos_inicio() # Limpiar lista de nombres de archivos
         self.enviar_btn_disabled = False
 
     def mostrar_popup_exito(self, mensaje):
@@ -358,6 +401,7 @@ class FormularioLlegada(BoxLayout, Screen):
     ubicacion_final_input = ObjectProperty(None)
     km_final_input = ObjectProperty(None)
     observaciones_llegada_input = ObjectProperty(None)
+    file_list_layout_fin = ObjectProperty(None) # Layout para la lista de archivos de fin
 
     fotos_fin_paths = ListProperty([""] * 4)  # Hasta 4 fotos
 
@@ -382,8 +426,6 @@ class FormularioLlegada(BoxLayout, Screen):
         Clock.schedule_once(self.setup_observaciones)
         self.conductores = []
         self.vehiculos = []
-        self.fotos_fin_label = Label(text="Fotos seleccionadas: ninguna", size_hint_y=None, height=50, font_size=dp(20))
-        self.add_widget(self.fotos_fin_label)
 
     def store_original_position(self, dt):
         """Guarda la posición original del formulario."""
@@ -548,12 +590,10 @@ class FormularioLlegada(BoxLayout, Screen):
             if selection:
                 self.fotos_fin_paths = selection[:4]
                 self.btn_km_final_color = [0, 0.8, 0, 1]  # Verde
-                nombres = [os.path.basename(path) for path in self.fotos_fin_paths if path]
-                self.fotos_fin_label.text = "Fotos seleccionadas: " + ", ".join(nombres)
+                Clock.schedule_once(lambda dt: self.mostrar_popup_fotos_seleccionadas(self.fotos_fin_paths), 0.4)
             else:
                 self.fotos_fin_paths = [""] * 4
                 self.btn_km_final_color = [0, 0.5, 0.8, 1]
-                self.fotos_fin_label.text = "Fotos seleccionadas: ninguna"
 
         filechooser.open_file(
             on_selection=on_selection,
@@ -561,6 +601,67 @@ class FormularioLlegada(BoxLayout, Screen):
             filters=[("Image Files", "*.jpg;*.jpeg;*.png")],
             multiple=True
         )
+
+    def mostrar_popup_fotos_seleccionadas(self, paths):
+        """Muestra un popup con la lista de fotos seleccionadas."""
+        content = BoxLayout(orientation='vertical', padding=10, spacing=10)
+        
+        titulo = Label(
+            text="Fotos seleccionadas:",
+            font_size=dp(20),
+            size_hint_y=None,
+            height=dp(40),
+            color=(0, 0.5, 0.8, 1)
+        )
+        content.add_widget(titulo)
+        
+        for path in paths:
+            if path:
+                filename = os.path.basename(path)
+                label = Label(
+                    text=f"• {filename}",
+                    font_size=dp(16),
+                    size_hint_y=None,
+                    height=dp(30),
+                    halign='left',
+                    color=(1, 1, 1, 1)
+                )
+                label.bind(size=label.setter('text_size'))
+                content.add_widget(label)
+        
+        btn = Button(
+            text="Aceptar",
+            size_hint=(None, None),
+            size=(dp(150), dp(50)),
+            pos_hint={'center_x': 0.5},
+            background_color=(0, 0.5, 0.8, 1)
+        )
+        
+        popup = Popup(
+            title='Fotos Seleccionadas',
+            content=content,
+            size_hint=(0.9, None),
+            height=dp(400),
+            auto_dismiss=True
+        )
+        
+        btn.bind(on_release=popup.dismiss)
+        content.add_widget(btn)
+        popup.open()
+
+    def actualizar_lista_fotos_fin(self):
+        """Actualiza la lista de nombres de archivos de fotos de fin en la UI."""
+        self.file_list_layout_fin.clear_widgets()
+        if self.fotos_fin_paths and any(self.fotos_fin_paths):
+            for path in self.fotos_fin_paths:
+                if path:
+                    filename = os.path.basename(path)
+                    label = Label(text=filename, font_size=dp(20), color=(0, 0, 0, 1), halign='left')
+                    self.file_list_layout_fin.add_widget(label)
+        else:
+            label = Label(text="Ninguna foto seleccionada", font_size=dp(20), color=(0.5, 0.5, 0.5, 1), halign='left')
+            self.file_list_layout_fin.add_widget(label)
+
 
     def enviar_datos_llegada(self):
         """Envía los datos del formulario de llegada al servidor."""
@@ -641,7 +742,7 @@ class FormularioLlegada(BoxLayout, Screen):
         self.observaciones_llegada_input.text = ""
         self.fotos_fin_paths = [""] * 4
         self.btn_km_final_color = [0, 0.5, 0.8, 1]
-        self.fotos_fin_label.text = "Fotos seleccionadas: ninguna"
+        self.actualizar_lista_fotos_fin() # Limpiar lista de nombres de archivos
         self.enviar_btn_disabled = False
 
     def mostrar_popup_exito(self, mensaje):

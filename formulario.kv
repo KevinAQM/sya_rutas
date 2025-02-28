@@ -4,6 +4,41 @@
 
 <MainScreen>:
     name: 'main_screen'
+    BoxLayout:  # Asegúrate de tener un BoxLayout como root widget dentro de MainScreen
+        orientation: 'vertical'
+        padding: 50
+        spacing: 50
+        pos_hint: {'center_y': 0.5}  # Centrar verticalmente
+
+        Label:
+            text: "Seleccione una opción:"
+            font_size: 60
+            color: 0, 0.5, 0.8, 1
+            bold: True
+            size_hint_y: None
+            height: 100
+
+        Button:
+            text: "DATOS DE SALIDA"
+            font_size: 50
+            size_hint_y: None
+            height: 200
+            background_color: (0, 0.5, 0.8, 1)
+            color: (1, 1, 1, 1)
+            on_press: root.go_to_salida_form()
+
+        Button:
+            text: "DATOS DE LLEGADA"
+            font_size: 50
+            size_hint_y: None
+            height: 200
+            background_color: (0, 0.5, 0.8, 1)
+            color: (1, 1, 1, 1)
+            on_press: root.go_to_llegada_form()
+
+        Label: # Espacio inferior (puedes dejarlo o quitarlo)
+            size_hint_y: None
+            height: 50
 
 <FormularioSalida>:
     name: 'salida_form'
@@ -16,6 +51,7 @@
     ubicacion_inicial_input: ubicacion_inicial_input
     km_inicial_input: km_inicial_input
     observaciones_salida_input: observaciones_salida_input
+    file_list_layout_inicio: file_list_layout_inicio # Referencia al layout de la lista de archivos de inicio
 
     canvas.before:
         Color:
@@ -220,20 +256,36 @@
 
             # Fotos de Inicio
             BoxLayout:
+                orientation: 'vertical' # Cambiado a vertical para el botón y la lista
                 size_hint_y: None
-                height: 70
+                height: 200 # Ajustado para dar mas espacio a la lista
                 spacing: 10
-                Label:
-                    text: "Fotos de Inicio:"
-                    size_hint_x: 0.4
-                    font_size: 40
-                    color: 0, 0, 0, 1
-                Button:
-                    text: "Subir Imagen"
-                    size_hint_x: 0.6
-                    font_size: 40
-                    background_color: root.btn_km_inicial_color  # Bind to the property
-                    on_press: root.seleccionar_foto_km_inicial()
+                BoxLayout: # BoxLayout horizontal para la etiqueta y el botón
+                    orientation: 'horizontal'
+                    size_hint_y: None
+                    height: 70
+                    spacing: 10
+                    Label:
+                        text: "Fotos de Inicio:"
+                        size_hint_x: 0.4
+                        font_size: 40
+                        color: 0, 0, 0, 1
+                    Button:
+                        text: "Subir Imagen"
+                        size_hint_x: 0.6
+                        font_size: 40
+                        background_color: root.btn_km_inicial_color  # Bind to the property
+                        on_press: root.seleccionar_foto_km_inicial()
+                BoxLayout: # BoxLayout vertical para la lista de nombres de archivo
+                    id: file_list_layout_inicio
+                    orientation: 'vertical'
+                    size_hint_y: None
+                    height: None # Dejar que se ajuste al contenido
+                    padding: [20, 0, 0, 0] # Indentación para la lista
+                    spacing: 5
+                    # Altura dinámica basada en el contenido
+                    height: self.minimum_height
+                    spacing: 20 # Espacio entre el boton y la lista de archivos
 
             # Observaciones Salida
             BoxLayout:
@@ -294,6 +346,7 @@
     ubicacion_final_input: ubicacion_final_input
     km_final_input: km_final_input
     observaciones_llegada_input: observaciones_llegada_input
+    file_list_layout_fin: file_list_layout_fin # Referencia al layout de la lista de archivos de fin
 
     canvas.before:
         Color:
@@ -498,20 +551,36 @@
 
             # Fotos de Fin
             BoxLayout:
+                orientation: 'vertical' # Cambiado a vertical para el botón y la lista
                 size_hint_y: None
-                height: 70
+                height: 200 # Ajustado para dar mas espacio a la lista
                 spacing: 10
-                Label:
-                    text: "Fotos de Fin:"
-                    size_hint_x: 0.4
-                    font_size: 40
-                    color: 0, 0, 0, 1
-                Button:
-                    text: "Subir Imagen"
-                    size_hint_x: 0.6
-                    font_size: 40
-                    background_color: root.btn_km_final_color  # Bind to the property
-                    on_press: root.seleccionar_foto_km_final()
+                BoxLayout: # BoxLayout horizontal para la etiqueta y el botón
+                    orientation: 'horizontal'
+                    size_hint_y: None
+                    height: 70
+                    spacing: 10
+                    Label:
+                        text: "Fotos de Fin:"
+                        size_hint_x: 0.4
+                        font_size: 40
+                        color: 0, 0, 0, 1
+                    Button:
+                        text: "Subir Imagen"
+                        size_hint_x: 0.6
+                        font_size: 40
+                        background_color: root.btn_km_final_color  # Bind to the property
+                        on_press: root.seleccionar_foto_km_final()
+                BoxLayout: # BoxLayout vertical para la lista de nombres de archivo
+                    id: file_list_layout_fin
+                    orientation: 'vertical'
+                    size_hint_y: None
+                    height: None # Dejar que se ajuste al contenido
+                    padding: [20, 0, 0, 0] # Indentación para la lista
+                    spacing: 5
+                    # Altura dinámica basada en el contenido
+                    height: self.minimum_height
+                    spacing: 20 # Espacio entre el boton y la lista de archivos
 
             # Observaciones Llegada
             BoxLayout:
