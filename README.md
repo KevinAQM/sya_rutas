@@ -7,7 +7,7 @@
 
 A continuación, se detalla el formato esperado para cada uno de los campos del formulario.
 
-<u>**Nombre del Chofer:**</u> ingresar texto y seleccionar de la lista desplegable.
+<u>Nombre del Chofer:</u> ingresar texto y seleccionar de la lista desplegable.
 
 <u>**Vehículo:**</u> ingresar texto y seleccionar de la lista desplegable.
 
