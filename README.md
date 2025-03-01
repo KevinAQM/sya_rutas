@@ -7,7 +7,7 @@
 
 A continuación, se detalla el formato esperado para cada uno de los campos del formulario.
 
-<u>Nombre del Chofer:</u> ingresar texto y seleccionar de la lista desplegable.
+<u>**Nombre del Chofer:**</u> ingresar texto y seleccionar de la lista desplegable.
 
 <u>**Vehículo:**</u> ingresar texto y seleccionar de la lista desplegable.
 
@@ -26,4 +26,4 @@ A continuación, se detalla el formato esperado para cada uno de los campos del 
 <u>**Observ. Salida / Observ. Llegada:**</u> ingresar texto. Permite multilínea, es decir crea una nueva línea dando ENTER.
 
 ---
-
+<span style="text-decoration: underline;">**Nombre del Chofer:**</span>
