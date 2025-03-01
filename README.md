@@ -4,6 +4,7 @@
 ![image](https://github.com/user-attachments/assets/c384764f-65a4-4f49-8cf8-ed824367d296)
 
 ---
+
 ## Formato de los campos
 
 A continuación, se detalla el formato esperado para cada uno de los campos del formulario.
@@ -25,4 +26,5 @@ A continuación, se detalla el formato esperado para cada uno de los campos del 
 **Fotos de Inicio / Fotos de Fin:** Subir imágenes con el botón Subir Imagen.
 
 **Observ. Salida / Observ. Llegada:** ingresar texto. Permite multilínea, es decir crea una nueva línea dando ENTER.
+
 ---
