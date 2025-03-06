@@ -241,11 +241,14 @@ class FormularioSalida(BoxLayout, Screen):
 
     def seleccionar_foto_km_inicial(self):
         """Abre el selector de archivos para elegir hasta 4 fotos del km inicial."""
+        # Reiniciar las rutas para permitir nueva selección
+        self.fotos_inicio_paths = [""] * 4
         def on_selection(selection):
             if selection:
                 self.fotos_inicio_paths = selection[:4]  # Limitar a 4 imágenes
-                self.btn_km_inicial_color = [0, 0.8, 0, 1]  # Verde
-                Clock.schedule_once(lambda dt: self.mostrar_popup_fotos_seleccionadas(self.fotos_inicio_paths), 0.4)
+                self.btn_km_inicial_color = [0, 0.8, 0, 1]  # Cambia a verde para indicar selección
+                # Programamos el popup con un pequeño retraso para asegurar el cierre correcto del filechooser
+                Clock.schedule_once(lambda dt: self.mostrar_popup_fotos_seleccionadas(self.fotos_inicio_paths), 2.5)
             else:
                 self.fotos_inicio_paths = [""] * 4
                 self.btn_km_inicial_color = [0, 0.5, 0.8, 1]
@@ -351,7 +354,8 @@ class FormularioSalida(BoxLayout, Screen):
                     self.mostrar_popup_error(f"No se pudo abrir la imagen {i}: {e}")
                     return
 
-        url = "http://127.0.0.1:5000/api/recibir_datos_choferes"  # Ajusta la IP según tu servidor
+        url = "http://34.67.103.132:5000/api/recibir_datos_choferes"  # Ajusta la IP según tu servidor
+        # url = "http://127.0.0.1:5000/api/recibir_datos_choferes"
 
         try:
             response = requests.post(url, data=payload, files=files, timeout=30)
@@ -586,11 +590,14 @@ class FormularioLlegada(BoxLayout, Screen):
 
     def seleccionar_foto_km_final(self):
         """Abre el selector de archivos para elegir hasta 4 fotos del km final."""
+        # Reiniciar las rutas para permitir nueva selección
+        self.fotos_fin_paths = [""] * 4
         def on_selection(selection):
             if selection:
-                self.fotos_fin_paths = selection[:4]
-                self.btn_km_final_color = [0, 0.8, 0, 1]  # Verde
-                Clock.schedule_once(lambda dt: self.mostrar_popup_fotos_seleccionadas(self.fotos_fin_paths), 0.4)
+                self.fotos_fin_paths = selection[:4]  # Limitar a 4 imágenes
+                self.btn_km_final_color = [0, 0.8, 0, 1]  # Cambia a verde para indicar selección
+                # Programamos el popup con un pequeño retraso para asegurar el cierre correcto del filechooser
+                Clock.schedule_once(lambda dt: self.mostrar_popup_fotos_seleccionadas(self.fotos_fin_paths), 2.5)
             else:
                 self.fotos_fin_paths = [""] * 4
                 self.btn_km_final_color = [0, 0.5, 0.8, 1]
@@ -680,7 +687,8 @@ class FormularioLlegada(BoxLayout, Screen):
             "observaciones_llegada": self.observaciones_llegada_input.text
         }
 
-        url = "http://127.0.0.1:5000/api/recibir_datos_choferes"  # Ajusta la IP según tu servidor
+        url = "http://34.67.103.132:5000/api/recibir_datos_choferes"  # Ajusta la IP según tu servidor
+        # url = "http://127.0.0.1:5000/api/recibir_datos_choferes"
 
         try:
             # Primera solicitud: enviar datos
@@ -757,13 +765,12 @@ class FormularioLlegada(BoxLayout, Screen):
 
 # Aplicación Principal
 class FormularioApp(App):
-    """Aplicación principal."""
     def build(self):
         sm = ScreenManager()
         sm.add_widget(MainScreen(name='main_screen'))
         sm.add_widget(FormularioSalida(name='salida_form'))
         sm.add_widget(FormularioLlegada(name='llegada_form'))
-        sm.current = 'main_screen'  # Iniciar en la pantalla principal
+        Clock.schedule_once(lambda dt: setattr(sm, 'current', 'main_screen'), 5.0)
         return sm
 
 if __name__ == '__main__':
