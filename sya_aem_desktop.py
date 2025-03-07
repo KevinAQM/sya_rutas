@@ -59,13 +59,15 @@ def descomprimir_archivo(ruta_archivo, carpeta_destino):
         messagebox.showerror("Error", f"Error al descomprimir el archivo:\n{e}")
 
 def on_descargar_rutas():
-    url_servidor = "http://34.67.103.132:5000/descargar-registro-rutas"
+    # url_servidor = "http://34.67.103.132:5000/descargar-registro-rutas"
+    url_servidor = "http://127.0.0.1:5000/descargar-registro-rutas"
     nombre_archivo = "registros_choferes.xlsx"
     ruta_registros = descargar_archivo(url_servidor, nombre_archivo)
 
 def on_descargar_fotos():
-    url_servidor = "http://34.67.103.132:5000/descargar-carpeta-fotos"
-    nombre_archivo = "fotos_km.zip"
+    # url_servidor = "http://34.67.103.132:5000/descargar-carpeta-fotos"
+    url_servidor = "http://127.0.0.1:5000/descargar-carpeta-fotos"
+    nombre_archivo = "fotos_vehiculos.zip"
     ruta_zip = descargar_archivo(url_servidor, nombre_archivo)
     if ruta_zip:
         ruta_descargas = crear_carpeta_descargas()
@@ -85,7 +87,7 @@ def on_abrir_rutas():
 
 def on_abrir_fotos():
     ruta_app = obtener_ruta_aplicacion()
-    ruta_fotos = os.path.join(ruta_app, "descargas", "fotos_km")
+    ruta_fotos = os.path.join(ruta_app, "descargas", "fotos_vehiculos")
     abrir_archivo(ruta_fotos)
 
 

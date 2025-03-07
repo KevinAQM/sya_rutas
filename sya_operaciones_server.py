@@ -20,7 +20,7 @@ PERSONAL_CSV_PATH = os.path.join(BASE_DIR, "operaciones_personal.csv")
 
 # Archivo Excel y directorio para registros de choferes
 REGISTROS_CHOFERES_EXCEL = os.path.join(BASE_DIR, "registros_choferes.xlsx")
-FOTOS_KM_DIR = os.path.join(BASE_DIR, "fotos_km")
+FOTOS_VEHICULOS_DIR = os.path.join(BASE_DIR, "fotos_vehiculos")
 
 # Ruta al archivo CSV de conductores y vehiculos
 CONDUCTORES_CSV_PATH = os.path.join(BASE_DIR, "aem_conductores.csv")
@@ -88,9 +88,9 @@ def inicializar_excel():
         logging.info(f"El archivo Excel de registros de choferes ya existe en: {REGISTROS_CHOFERES_EXCEL}")
 
     # Crear directorio de fotos si no existe
-    if not os.path.exists(FOTOS_KM_DIR):
-        os.makedirs(FOTOS_KM_DIR)
-        logging.info(f"Directorio de fotos creado: {FOTOS_KM_DIR}")
+    if not os.path.exists(FOTOS_VEHICULOS_DIR):
+        os.makedirs(FOTOS_VEHICULOS_DIR)
+        logging.info(f"Directorio de fotos creado: {FOTOS_VEHICULOS_DIR}")
 
 def actualizar_cabeceras_materiales(ws, num_materiales):
     """Actualiza las cabeceras de la hoja de materiales."""
@@ -571,7 +571,7 @@ def procesar_datos_choferes(data, files):
                     if foto_fin:
                         original_extension = os.path.splitext(foto_fin.filename)[1] if foto_fin.filename else ".jpg"
                         filename_fin = f"{nombre_chofer_filename}_{placa_filename}_{fecha_llegada_filename}_llegada_{i}{original_extension}"
-                        path_fin = os.path.join(FOTOS_KM_DIR, filename_fin)
+                        path_fin = os.path.join(FOTOS_VEHICULOS_DIR, filename_fin)
                         foto_fin.save(path_fin)
                         logging.info(f"Foto de fin {i} guardada en {path_fin} para fila {row_idx}")
                 return True, "Fotos de llegada guardadas correctamente."
@@ -602,7 +602,7 @@ def procesar_datos_choferes(data, files):
                 if foto_inicio:
                     original_extension = os.path.splitext(foto_inicio.filename)[1] if foto_inicio.filename else ".jpg"
                     filename_inicio = f"{nombre_chofer_filename}_{placa_filename}_{fecha_salida_filename}_salida_{i}{original_extension}"
-                    path_inicio = os.path.join(FOTOS_KM_DIR, filename_inicio)
+                    path_inicio = os.path.join(FOTOS_VEHICULOS_DIR, filename_inicio)
                     foto_inicio.save(path_inicio)
                     logging.info(f"Foto de inicio {i} guardada en {path_inicio}")
             logging.info(f"Datos de salida guardados en nueva fila.")
@@ -714,15 +714,15 @@ def descargar_registro_rutas():
 def descargar_carpeta_fotos():
     """Comprime y descarga la carpeta de fotos de kilometraje."""
     try:
-        zip_file_path = os.path.join(BASE_DIR, "fotos_km.zip")
+        zip_file_path = os.path.join(BASE_DIR, "fotos_vehiculos.zip")
         with zipfile.ZipFile(zip_file_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-            for root, _, files in os.walk(FOTOS_KM_DIR):
+            for root, _, files in os.walk(FOTOS_VEHICULOS_DIR):
                 for file in files:
                     zipf.write(os.path.join(root, file),
                                os.path.relpath(os.path.join(root, file),
-                                               os.path.join(FOTOS_KM_DIR, '..')))
+                                               os.path.join(FOTOS_VEHICULOS_DIR, '..')))
         logging.info(f"Intentando enviar carpeta de fotos comprimida: {zip_file_path}")
-        return send_file(zip_file_path, as_attachment=True, download_name='fotos_km.zip')
+        return send_file(zip_file_path, as_attachment=True, download_name='fotos_vehiculos.zip')
     except Exception as e:
         logging.error(f"Error al comprimir o descargar la carpeta de fotos: {str(e)}")
         return str(e), 500

@@ -56,7 +56,7 @@ class FormularioSalida(BoxLayout, Screen):
     ubicacion_inicial_input = ObjectProperty(None)
     km_inicial_input = ObjectProperty(None)
     observaciones_salida_input = ObjectProperty(None)
-    file_list_layout_inicio = ObjectProperty(None) # Layout para la lista de archivos de inicio
+    file_list_layout_inicio = ObjectProperty(None)  # Layout para la lista de archivos de inicio
 
     fotos_inicio_paths = ListProperty([""] * 4)  # Hasta 4 fotos
 
@@ -69,18 +69,18 @@ class FormularioSalida(BoxLayout, Screen):
 
     enviar_btn_disabled = BooleanProperty(False)
 
-    def __init__(self, **kwargs):
+    def __init__(self, conductores, vehiculos, **kwargs):
         super().__init__(**kwargs)
         self.orientation = 'vertical'
         self.padding = 30
         self.spacing = 40
         self.original_y = 0
+        self.conductores = conductores
+        self.vehiculos = vehiculos
         Clock.schedule_once(self.store_original_position, 0)
         Clock.schedule_once(self.set_fecha_actual)
         Clock.schedule_once(self.setup_dropdowns)
         Clock.schedule_once(self.setup_observaciones)
-        self.conductores = []
-        self.vehiculos = []
 
     def store_original_position(self, dt):
         """Guarda la posición original del formulario."""
@@ -98,16 +98,13 @@ class FormularioSalida(BoxLayout, Screen):
         self.nombre_input.bind(text=self.on_nombre_text)
         self.vehiculo_input.bind(text=self.on_vehiculo_text)
 
-        self.cargar_conductores()
-        self.cargar_vehiculos()
-
     def setup_observaciones(self, dt):
         """Configura el comportamiento del campo de observaciones."""
         self.observaciones_salida_input.bind(focus=self.on_observaciones_focus)
 
     def on_observaciones_focus(self, instance, value):
         """Anima el formulario al enfocar/desenfocar el campo de observaciones."""
-        offset = dp(150)
+        offset = dp(50)
         if value:
             Animation(y=self.y + offset, d=0.3).start(self)
         else:
@@ -167,39 +164,11 @@ class FormularioSalida(BoxLayout, Screen):
             self.dropdown_vehiculo.dismiss()
             self.placa_input.text = ""
 
-    def cargar_conductores(self):
-        """Carga la lista de conductores desde el servidor."""
-        url = url_conductores
-        try:
-            response = requests.get(url, timeout=10)
-            response.raise_for_status()
-            self.conductores = response.json()
-        except requests.exceptions.RequestException as e:
-            self.mostrar_popup_error(f"Error al cargar conductores: {e}")
-            logging.error(f"Error al cargar conductores: {e}")
-        except ValueError as e:
-            self.mostrar_popup_error(f"Error al procesar respuesta (conductores): {e}")
-            logging.error(f"Error al procesar respuesta (conductores): {e}")
-
     def seleccionar_conductor(self, conductor):
         """Establece el conductor seleccionado."""
         self.nombre_input.text = conductor
         self.selected_chofer = conductor
         self.dropdown_chofer.dismiss()
-
-    def cargar_vehiculos(self):
-        """Carga la lista de vehículos desde el servidor."""
-        url = url_vehiculos
-        try:
-            response = requests.get(url, timeout=10)
-            response.raise_for_status()
-            self.vehiculos = response.json()
-        except requests.exceptions.RequestException as e:
-            self.mostrar_popup_error(f"Error al cargar vehículos: {e}")
-            logging.error(f"Error al cargar vehículos: {e}")
-        except ValueError as e:
-            self.mostrar_popup_error(f"Error al procesar respuesta (vehículos): {e}")
-            logging.error(f"Error al procesar respuesta (vehículos): {e}")
 
     def seleccionar_vehiculo(self, vehiculo_data):
         """Establece el vehículo y placa seleccionados."""
@@ -241,13 +210,11 @@ class FormularioSalida(BoxLayout, Screen):
 
     def seleccionar_foto_km_inicial(self):
         """Abre el selector de archivos para elegir hasta 4 fotos del km inicial."""
-        # Reiniciar las rutas para permitir nueva selección
         self.fotos_inicio_paths = [""] * 4
         def on_selection(selection):
             if selection:
-                self.fotos_inicio_paths = selection[:4]  # Limitar a 4 imágenes
-                self.btn_km_inicial_color = [0, 0.8, 0, 1]  # Cambia a verde para indicar selección
-                # Programamos el popup con un pequeño retraso para asegurar el cierre correcto del filechooser
+                self.fotos_inicio_paths = selection[:4]
+                self.btn_km_inicial_color = [0, 0.8, 0, 1]
                 Clock.schedule_once(lambda dt: self.mostrar_popup_fotos_seleccionadas(self.fotos_inicio_paths), 2.5)
             else:
                 self.fotos_inicio_paths = [""] * 4
@@ -264,7 +231,6 @@ class FormularioSalida(BoxLayout, Screen):
         """Muestra un popup con la lista de fotos seleccionadas."""
         content = BoxLayout(orientation='vertical', padding=10, spacing=10)
         
-        # Título
         titulo = Label(
             text="Fotos seleccionadas:",
             font_size=dp(20),
@@ -274,7 +240,6 @@ class FormularioSalida(BoxLayout, Screen):
         )
         content.add_widget(titulo)
         
-        # Lista de fotos
         for path in paths:
             if path:
                 filename = os.path.basename(path)
@@ -289,7 +254,6 @@ class FormularioSalida(BoxLayout, Screen):
                 label.bind(size=label.setter('text_size'))
                 content.add_widget(label)
         
-        # Botón de cerrar
         btn = Button(
             text="Aceptar",
             size_hint=(None, None),
@@ -323,7 +287,6 @@ class FormularioSalida(BoxLayout, Screen):
             label = Label(text="Ninguna foto seleccionada", font_size=dp(20), color=(0.5, 0.5, 0.5, 1), halign='left')
             self.file_list_layout_inicio.add_widget(label)
 
-
     def enviar_datos_salida(self):
         """Envía los datos del formulario de salida al servidor."""
         if not self.validar_campos():
@@ -354,8 +317,7 @@ class FormularioSalida(BoxLayout, Screen):
                     self.mostrar_popup_error(f"No se pudo abrir la imagen {i}: {e}")
                     return
 
-        url = "http://34.67.103.132:5000/api/recibir_datos_choferes"  # Ajusta la IP según tu servidor
-        # url = "http://127.0.0.1:5000/api/recibir_datos_choferes"
+        url = "http://127.0.0.1:5000/api/recibir_datos_choferes"
 
         try:
             response = requests.post(url, data=payload, files=files, timeout=30)
@@ -381,7 +343,7 @@ class FormularioSalida(BoxLayout, Screen):
         self.observaciones_salida_input.text = ""
         self.fotos_inicio_paths = [""] * 4
         self.btn_km_inicial_color = [0, 0.5, 0.8, 1]
-        self.actualizar_lista_fotos_inicio() # Limpiar lista de nombres de archivos
+        self.actualizar_lista_fotos_inicio()
         self.enviar_btn_disabled = False
 
     def mostrar_popup_exito(self, mensaje):
@@ -405,7 +367,7 @@ class FormularioLlegada(BoxLayout, Screen):
     ubicacion_final_input = ObjectProperty(None)
     km_final_input = ObjectProperty(None)
     observaciones_llegada_input = ObjectProperty(None)
-    file_list_layout_fin = ObjectProperty(None) # Layout para la lista de archivos de fin
+    file_list_layout_fin = ObjectProperty(None)  # Layout para la lista de archivos de fin
 
     fotos_fin_paths = ListProperty([""] * 4)  # Hasta 4 fotos
 
@@ -418,18 +380,18 @@ class FormularioLlegada(BoxLayout, Screen):
 
     enviar_btn_disabled = BooleanProperty(False)
 
-    def __init__(self, **kwargs):
+    def __init__(self, conductores, vehiculos, **kwargs):
         super().__init__(**kwargs)
         self.orientation = 'vertical'
         self.padding = 30
         self.spacing = 40
         self.original_y = 0
+        self.conductores = conductores
+        self.vehiculos = vehiculos
         Clock.schedule_once(self.store_original_position, 0)
         Clock.schedule_once(self.set_fecha_actual)
         Clock.schedule_once(self.setup_dropdowns)
         Clock.schedule_once(self.setup_observaciones)
-        self.conductores = []
-        self.vehiculos = []
 
     def store_original_position(self, dt):
         """Guarda la posición original del formulario."""
@@ -447,16 +409,13 @@ class FormularioLlegada(BoxLayout, Screen):
         self.nombre_input.bind(text=self.on_nombre_text)
         self.vehiculo_input.bind(text=self.on_vehiculo_text)
 
-        self.cargar_conductores()
-        self.cargar_vehiculos()
-
     def setup_observaciones(self, dt):
         """Configura el comportamiento del campo de observaciones."""
         self.observaciones_llegada_input.bind(focus=self.on_observaciones_focus)
 
     def on_observaciones_focus(self, instance, value):
         """Anima el formulario al enfocar/desenfocar el campo de observaciones."""
-        offset = dp(150)
+        offset = dp(50)
         if value:
             Animation(y=self.y + offset, d=0.3).start(self)
         else:
@@ -516,39 +475,11 @@ class FormularioLlegada(BoxLayout, Screen):
             self.dropdown_vehiculo.dismiss()
             self.placa_input.text = ""
 
-    def cargar_conductores(self):
-        """Carga la lista de conductores desde el servidor."""
-        url = url_conductores
-        try:
-            response = requests.get(url, timeout=10)
-            response.raise_for_status()
-            self.conductores = response.json()
-        except requests.exceptions.RequestException as e:
-            self.mostrar_popup_error(f"Error al cargar conductores: {e}")
-            logging.error(f"Error al cargar conductores: {e}")
-        except ValueError as e:
-            self.mostrar_popup_error(f"Error al procesar respuesta (conductores): {e}")
-            logging.error(f"Error al procesar respuesta (conductores): {e}")
-
     def seleccionar_conductor(self, conductor):
         """Establece el conductor seleccionado."""
         self.nombre_input.text = conductor
         self.selected_chofer = conductor
         self.dropdown_chofer.dismiss()
-
-    def cargar_vehiculos(self):
-        """Carga la lista de vehículos desde el servidor."""
-        url = url_vehiculos
-        try:
-            response = requests.get(url, timeout=10)
-            response.raise_for_status()
-            self.vehiculos = response.json()
-        except requests.exceptions.RequestException as e:
-            self.mostrar_popup_error(f"Error al cargar vehículos: {e}")
-            logging.error(f"Error al cargar vehículos: {e}")
-        except ValueError as e:
-            self.mostrar_popup_error(f"Error al procesar respuesta (vehículos): {e}")
-            logging.error(f"Error al procesar respuesta (vehículos): {e}")
 
     def seleccionar_vehiculo(self, vehiculo_data):
         """Establece el vehículo y placa seleccionados."""
@@ -590,13 +521,11 @@ class FormularioLlegada(BoxLayout, Screen):
 
     def seleccionar_foto_km_final(self):
         """Abre el selector de archivos para elegir hasta 4 fotos del km final."""
-        # Reiniciar las rutas para permitir nueva selección
         self.fotos_fin_paths = [""] * 4
         def on_selection(selection):
             if selection:
-                self.fotos_fin_paths = selection[:4]  # Limitar a 4 imágenes
-                self.btn_km_final_color = [0, 0.8, 0, 1]  # Cambia a verde para indicar selección
-                # Programamos el popup con un pequeño retraso para asegurar el cierre correcto del filechooser
+                self.fotos_fin_paths = selection[:4]
+                self.btn_km_final_color = [0, 0.8, 0, 1]
                 Clock.schedule_once(lambda dt: self.mostrar_popup_fotos_seleccionadas(self.fotos_fin_paths), 2.5)
             else:
                 self.fotos_fin_paths = [""] * 4
@@ -669,7 +598,6 @@ class FormularioLlegada(BoxLayout, Screen):
             label = Label(text="Ninguna foto seleccionada", font_size=dp(20), color=(0.5, 0.5, 0.5, 1), halign='left')
             self.file_list_layout_fin.add_widget(label)
 
-
     def enviar_datos_llegada(self):
         """Envía los datos del formulario de llegada al servidor."""
         if not self.validar_campos_llegada():
@@ -687,19 +615,17 @@ class FormularioLlegada(BoxLayout, Screen):
             "observaciones_llegada": self.observaciones_llegada_input.text
         }
 
-        url = "http://34.67.103.132:5000/api/recibir_datos_choferes"  # Ajusta la IP según tu servidor
-        # url = "http://127.0.0.1:5000/api/recibir_datos_choferes"
+        url = "http://127.0.0.1:5000/api/recibir_datos_choferes"
+        
+        files = {}
 
         try:
-            # Primera solicitud: enviar datos
             response = requests.post(url, data=payload, timeout=30)
             data = response.json()
 
             if data.get('status') == 'success':
                 row_idx = data.get("row_idx")
-                files = {}
-                if any(self.fotos_fin_paths):  # Si hay al menos una foto
-                    # Segunda solicitud: enviar fotos
+                if any(self.fotos_fin_paths):
                     for i, path in enumerate(self.fotos_fin_paths, start=1):
                         if path:
                             try:
@@ -750,7 +676,7 @@ class FormularioLlegada(BoxLayout, Screen):
         self.observaciones_llegada_input.text = ""
         self.fotos_fin_paths = [""] * 4
         self.btn_km_final_color = [0, 0.5, 0.8, 1]
-        self.actualizar_lista_fotos_fin() # Limpiar lista de nombres de archivos
+        self.actualizar_lista_fotos_fin()
         self.enviar_btn_disabled = False
 
     def mostrar_popup_exito(self, mensaje):
@@ -765,13 +691,43 @@ class FormularioLlegada(BoxLayout, Screen):
 
 # Aplicación Principal
 class FormularioApp(App):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.conductores = []
+        self.vehiculos = []
+
     def build(self):
+        self.cargar_conductores()
+        self.cargar_vehiculos()
+
         sm = ScreenManager()
         sm.add_widget(MainScreen(name='main_screen'))
-        sm.add_widget(FormularioSalida(name='salida_form'))
-        sm.add_widget(FormularioLlegada(name='llegada_form'))
+        sm.add_widget(FormularioSalida(conductores=self.conductores, vehiculos=self.vehiculos, name='salida_form'))
+        sm.add_widget(FormularioLlegada(conductores=self.conductores, vehiculos=self.vehiculos, name='llegada_form'))
         Clock.schedule_once(lambda dt: setattr(sm, 'current', 'main_screen'), 5.0)
         return sm
+
+    def cargar_conductores(self):
+        """Carga la lista de conductores desde el servidor."""
+        try:
+            response = requests.get(url_conductores, timeout=10)
+            response.raise_for_status()
+            self.conductores = response.json()
+        except requests.exceptions.RequestException as e:
+            logging.error(f"Error al cargar conductores: {e}")
+        except ValueError as e:
+            logging.error(f"Error al procesar respuesta (conductores): {e}")
+
+    def cargar_vehiculos(self):
+        """Carga la lista de vehículos desde el servidor."""
+        try:
+            response = requests.get(url_vehiculos, timeout=10)
+            response.raise_for_status()
+            self.vehiculos = response.json()
+        except requests.exceptions.RequestException as e:
+            logging.error(f"Error al cargar vehículos: {e}")
+        except ValueError as e:
+            logging.error(f"Error al procesar respuesta (vehículos): {e}")
 
 if __name__ == '__main__':
     FormularioApp().run()
