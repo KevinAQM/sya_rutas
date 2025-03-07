@@ -74,14 +74,18 @@ def inicializar_excel():
         logging.info(f"El archivo Excel de requerimientos ya existe en: {REQUERIMIENTOS_EXCEL_FILE}")
 
     # Inicializar Excel de Registros de Choferes
+# Inicializar Excel de Registros de Choferes
     if not os.path.exists(REGISTROS_CHOFERES_EXCEL):
         logging.info(f"Creando archivo Excel de registros de choferes en: {REGISTROS_CHOFERES_EXCEL}")
         wb_choferes = openpyxl.Workbook()
         ws_choferes = wb_choferes.active
         ws_choferes.title = "Registros"
-        headers_choferes = ["Nombre del Chofer", "Vehículo", "Placa", "Fecha de Salida", "Hora de Salida",
-            "Ubicación Inicial", "Kilometraje Inicial", "Observaciones Salida", "Fecha de Llegada", "Hora de Retorno",
-            "Ubicación Final", "Kilometraje Final", "Observaciones Llegada"] # Headers actualizados
+        headers_choferes = [
+            "Fecha", "Nombre del Chofer", "Vehículo", "Placa", "Fecha de Salida", 
+            "Hora de Salida", "Ubicación Inicial", "Kilometraje Inicial", 
+            "Observaciones Salida", "Fecha de Llegada", "Hora de Retorno",
+            "Ubicación Final", "Kilometraje Final", "Observaciones Llegada"
+        ]
         ws_choferes.append(headers_choferes)
         wb_choferes.save(REGISTROS_CHOFERES_EXCEL)
     else:
@@ -542,49 +546,81 @@ def procesar_datos_choferes(data, files):
         tipo_formulario = data.get("tipo_formulario")
         row_idx = data.get("row_idx")  # Identificador de fila (opcional)
 
-        fecha_actual_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        foto_inicio = files.get("foto_km_inicial")
-        foto_fin = files.get("foto_km_final")
+        # Función para generar el nombre de la subcarpeta
+        def generar_nombre_subcarpeta(fecha_salida, nombre_chofer, placa):
+            fecha_salida_filename = fecha_salida.replace("-", "")
+            nombre_chofer_filename = nombre_chofer.lower().replace(" ", "-")
+            placa_filename = placa.replace(" ", "-")
+            return f"{fecha_salida_filename}_{nombre_chofer_filename}_{placa_filename}"
 
-        # Si solo se envía row_idx y foto (segunda solicitud para llegada)
+        # Si solo se envía row_idx y fotos (segunda solicitud para llegada)
         if row_idx and not tipo_formulario:
             try:
                 row_idx = int(row_idx)
                 if row_idx <= 1 or row_idx > ws_choferes.max_row:
                     return False, "Índice de fila inválido."
 
-                # Leer la fecha de llegada desde el Excel
-                fecha_llegada_excel = ws_choferes.cell(row=row_idx, column=9).value
-                if isinstance(fecha_llegada_excel, datetime):
-                    fecha_llegada_filename = fecha_llegada_excel.strftime("%Y%m%d")
-                elif isinstance(fecha_llegada_excel, str):
-                    fecha_llegada_filename = fecha_llegada_excel.replace("-", "")
+                # Obtener la fecha de salida desde el Excel (columna 5: Fecha de Salida)
+                fecha_salida_excel = ws_choferes.cell(row=row_idx, column=5).value
+                if isinstance(fecha_salida_excel, datetime):
+                    fecha_salida_str = fecha_salida_excel.strftime("%Y-%m-%d")
                 else:
-                    fecha_llegada_filename = datetime.now().strftime("%Y%m%d")  # Fallback
+                    fecha_salida_str = str(fecha_salida_excel)
 
-                nombre_chofer_filename = data.get("nombre_chofer", "").lower().replace(" ", "-")
-                placa_filename = data.get("placa", "").replace(" ", "-")
+                # Generar el nombre de la subcarpeta
+                subcarpeta_nombre = generar_nombre_subcarpeta(fecha_salida_str, nombre_chofer, placa)
+                subcarpeta_path = os.path.join(FOTOS_VEHICULOS_DIR, subcarpeta_nombre)
 
+                # Crear la subcarpeta si no existe
+                if not os.path.exists(subcarpeta_path):
+                    os.makedirs(subcarpeta_path)
+                    logging.info(f"Subcarpeta creada: {subcarpeta_path}")
+
+                # Guardar las fotos de llegada en la subcarpeta
                 for i in range(1, 5):
                     foto_key = f"foto_km_final_{i}"
                     foto_fin = files.get(foto_key)
                     if foto_fin:
                         original_extension = os.path.splitext(foto_fin.filename)[1] if foto_fin.filename else ".jpg"
-                        filename_fin = f"{nombre_chofer_filename}_{placa_filename}_{fecha_llegada_filename}_llegada_{i}{original_extension}"
-                        path_fin = os.path.join(FOTOS_VEHICULOS_DIR, filename_fin)
+                        filename_fin = f"{subcarpeta_nombre}_llegada_{i}{original_extension}"
+                        path_fin = os.path.join(subcarpeta_path, filename_fin)
                         foto_fin.save(path_fin)
                         logging.info(f"Foto de fin {i} guardada en {path_fin} para fila {row_idx}")
                 return True, "Fotos de llegada guardadas correctamente."
             except ValueError:
                 return False, "Índice de fila debe ser un número entero."
 
-        # Lógica normal para formulario completo
+        # Lógica para formulario de salida
         if tipo_formulario == "salida":
+            fecha_salida = data.get("fecha_salida")
+            # Generar el nombre de la subcarpeta
+            subcarpeta_nombre = generar_nombre_subcarpeta(fecha_salida, nombre_chofer, placa)
+            subcarpeta_path = os.path.join(FOTOS_VEHICULOS_DIR, subcarpeta_nombre)
+
+            # Crear la subcarpeta si no existe
+            if not os.path.exists(subcarpeta_path):
+                os.makedirs(subcarpeta_path)
+                logging.info(f"Subcarpeta creada: {subcarpeta_path}")
+
+            # Guardar las fotos de salida en la subcarpeta
+            for i in range(1, 5):
+                foto_key = f"foto_km_inicial_{i}"
+                foto_inicio = files.get(foto_key)
+                if foto_inicio:
+                    original_extension = os.path.splitext(foto_inicio.filename)[1] if foto_inicio.filename else ".jpg"
+                    filename_inicio = f"{subcarpeta_nombre}_salida_{i}{original_extension}"
+                    path_inicio = os.path.join(subcarpeta_path, filename_inicio)
+                    foto_inicio.save(path_inicio)
+                    logging.info(f"Foto de inicio {i} guardada en {path_inicio}")
+
+            # Guardar los datos en el Excel
+            fecha_salida_date = datetime.strptime(fecha_salida, "%Y-%m-%d").date()
             fila_salida = [
+                fecha_salida_date,  # Fecha
                 nombre_chofer,
                 data.get("vehiculo"),
                 placa,
-                datetime.strptime(data.get("fecha_salida"), "%Y-%m-%d").date(),
+                fecha_salida_date,  # Fecha de Salida
                 data.get("hora_salida"),
                 data.get("ubicacion_inicial"),
                 data.get("km_inicial"),
@@ -593,43 +629,60 @@ def procesar_datos_choferes(data, files):
             ]
             ws_choferes.append(fila_salida)
             wb_choferes.save(REGISTROS_CHOFERES_EXCEL)
-            nombre_chofer_filename = data.get("nombre_chofer", "").lower().replace(" ", "-")
-            placa_filename = data.get("placa", "").replace(" ", "-")
-            fecha_salida_filename = data.get("fecha_salida", "").replace("-", "")
-            for i in range(1, 5):
-                foto_key = f"foto_km_inicial_{i}"
-                foto_inicio = files.get(foto_key)
-                if foto_inicio:
-                    original_extension = os.path.splitext(foto_inicio.filename)[1] if foto_inicio.filename else ".jpg"
-                    filename_inicio = f"{nombre_chofer_filename}_{placa_filename}_{fecha_salida_filename}_salida_{i}{original_extension}"
-                    path_inicio = os.path.join(FOTOS_VEHICULOS_DIR, filename_inicio)
-                    foto_inicio.save(path_inicio)
-                    logging.info(f"Foto de inicio {i} guardada en {path_inicio}")
             logging.info(f"Datos de salida guardados en nueva fila.")
             return True, "Datos de salida guardados correctamente."
 
+        # Lógica para formulario de llegada
         elif tipo_formulario == "llegada":
             ultimo_registro = None
             for row_idx in range(ws_choferes.max_row, 1, -1):
-                if (ws_choferes.cell(row=row_idx, column=1).value == nombre_chofer and
-                    ws_choferes.cell(row=row_idx, column=3).value == placa):
+                if (ws_choferes.cell(row=row_idx, column=2).value == nombre_chofer and
+                    ws_choferes.cell(row=row_idx, column=4).value == placa):
                     ultimo_registro = row_idx
                     break
 
             if ultimo_registro:
-                if (ws_choferes.cell(row=ultimo_registro, column=9).value is None and
-                    ws_choferes.cell(row=ultimo_registro, column=10).value is None and
+                if (ws_choferes.cell(row=ultimo_registro, column=10).value is None and
                     ws_choferes.cell(row=ultimo_registro, column=11).value is None and
                     ws_choferes.cell(row=ultimo_registro, column=12).value is None and
-                    ws_choferes.cell(row=ultimo_registro, column=13).value is None):
-                    ws_choferes.cell(row=ultimo_registro, column=9).value = datetime.strptime(data.get("fecha_llegada"), "%Y-%m-%d").date()
-                    ws_choferes.cell(row=ultimo_registro, column=10).value = data.get("hora_retorno")
-                    ws_choferes.cell(row=ultimo_registro, column=11).value = data.get("ubicacion_final")
-                    ws_choferes.cell(row=ultimo_registro, column=12).value = data.get("km_final")
-                    ws_choferes.cell(row=ultimo_registro, column=13).value = data.get("observaciones_llegada")
+                    ws_choferes.cell(row=ultimo_registro, column=13).value is None and
+                    ws_choferes.cell(row=ultimo_registro, column=14).value is None):
+                    # Actualizar los datos de llegada en el Excel
+                    ws_choferes.cell(row=ultimo_registro, column=10).value = datetime.strptime(data.get("fecha_llegada"), "%Y-%m-%d").date()
+                    ws_choferes.cell(row=ultimo_registro, column=11).value = data.get("hora_retorno")
+                    ws_choferes.cell(row=ultimo_registro, column=12).value = data.get("ubicacion_final")
+                    ws_choferes.cell(row=ultimo_registro, column=13).value = data.get("km_final")
+                    ws_choferes.cell(row=ultimo_registro, column=14).value = data.get("observaciones_llegada")
                     wb_choferes.save(REGISTROS_CHOFERES_EXCEL)
                     logging.info(f"Datos de llegada actualizados en fila {ultimo_registro}.")
-                    # Devolver el índice de la fila para usarlo en la segunda solicitud
+
+                    # Obtener la fecha de salida desde el Excel (columna 5: Fecha de Salida)
+                    fecha_salida_excel = ws_choferes.cell(row=ultimo_registro, column=5).value
+                    if isinstance(fecha_salida_excel, datetime):
+                        fecha_salida_str = fecha_salida_excel.strftime("%Y-%m-%d")
+                    else:
+                        fecha_salida_str = str(fecha_salida_excel)
+
+                    # Generar el nombre de la subcarpeta
+                    subcarpeta_nombre = generar_nombre_subcarpeta(fecha_salida_str, nombre_chofer, placa)
+                    subcarpeta_path = os.path.join(FOTOS_VEHICULOS_DIR, subcarpeta_nombre)
+
+                    # Crear la subcarpeta si no existe (aunque debería existir desde la salida)
+                    if not os.path.exists(subcarpeta_path):
+                        os.makedirs(subcarpeta_path)
+                        logging.info(f"Subcarpeta creada: {subcarpeta_path}")
+
+                    # Guardar las fotos de llegada en la subcarpeta
+                    for i in range(1, 5):
+                        foto_key = f"foto_km_final_{i}"
+                        foto_fin = files.get(foto_key)
+                        if foto_fin:
+                            original_extension = os.path.splitext(foto_fin.filename)[1] if foto_fin.filename else ".jpg"
+                            filename_fin = f"{subcarpeta_nombre}_llegada_{i}{original_extension}"
+                            path_fin = os.path.join(subcarpeta_path, filename_fin)
+                            foto_fin.save(path_fin)
+                            logging.info(f"Foto de fin {i} guardada en {path_fin} para fila {ultimo_registro}")
+
                     return True, "Datos de llegada actualizados correctamente.", ultimo_registro
                 else:
                     return False, "El último registro ya tiene datos de llegada. No puedes actualizarlo."
