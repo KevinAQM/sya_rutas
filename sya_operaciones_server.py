@@ -781,4 +781,4 @@ def descargar_carpeta_fotos():
         return str(e), 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True) # debug=True para desarrollo
+    app.run(host='0.0.0.0', port=5000, debug=False) # debug=True para desarrollo

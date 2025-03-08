@@ -19,6 +19,8 @@ from kivy.uix.dropdown import DropDown
 from kivy.metrics import dp
 from kivy.animation import Animation
 from kivy.uix.screenmanager import ScreenManager, Screen
+from PIL import Image as PilImage
+import io
 
 # URLs del servidor
 url_conductores = "http://34.67.103.132:5000/api/conductores"
@@ -32,6 +34,38 @@ if platform == "android":
                              Permission.WRITE_EXTERNAL_STORAGE])
     except ImportError:
         pass
+
+def comprimir_imagen(path, quality=70, max_size=(1280, 960)):
+    """Intenta comprimir la imagen y devuelve un buffer con la imagen comprimida.
+    Si hay un error, devuelve None para usar la imagen original."""
+    try:
+        # Abrir la imagen
+        img = PilImage.open(path)
+        
+        # Obtener el tamaño original
+        original_width, original_height = img.size
+        target_width, target_height = max_size
+        
+        # Verificar si la imagen necesita redimensionarse
+        if original_width > target_width or original_height > target_height:
+            # Calcular el nuevo tamaño manteniendo la relación de aspecto
+            aspect_ratio = original_width / original_height
+            if aspect_ratio > 1:  # Imagen más ancha que alta
+                new_width = target_width
+                new_height = int(target_width / aspect_ratio)
+            else:  # Imagen más alta que ancha
+                new_height = target_height
+                new_width = int(target_height * aspect_ratio)
+            img = img.resize((new_width, new_height), PilImage.Resampling.LANCZOS)
+        
+        # Crear un buffer para la imagen comprimida
+        buffer = io.BytesIO()
+        img.save(buffer, format="JPEG", quality=quality)  # Comprimir con calidad 70
+        buffer.seek(0)  # Reiniciar el puntero del buffer
+        return buffer
+    except Exception as e:
+        logging.error(f"Error al comprimir la imagen {path}: {e}")
+        return None  # En caso de error, devolvemos None
 
 # Pantalla principal
 class MainScreen(Screen):
@@ -288,10 +322,11 @@ class FormularioSalida(BoxLayout, Screen):
             self.file_list_layout_inicio.add_widget(label)
 
     def enviar_datos_salida(self):
-        """Envía los datos del formulario de salida al servidor."""
-        if not self.validar_campos():
+        """Envía los datos del formulario de salida al servidor, usando fotos comprimidas si es posible."""
+        if not self.validar_campos():  # Validación de campos
             return
 
+        # Preparar los datos del formulario
         payload = {
             "tipo_formulario": "salida",
             "nombre_chofer": self.nombre_input.text,
@@ -304,21 +339,31 @@ class FormularioSalida(BoxLayout, Screen):
             "observaciones_salida": self.observaciones_salida_input.text
         }
 
+        # Preparar las imágenes para el envío
         files = {}
         for i, path in enumerate(self.fotos_inicio_paths, start=1):
             if path:
-                try:
+                # Intentar comprimir la imagen
+                compressed_image = comprimir_imagen(path)
+                if compressed_image:
+                    # Si la compresión es exitosa, usar la imagen comprimida
                     files[f"foto_km_inicial_{i}"] = (
-                        os.path.basename(path),
-                        open(path, 'rb'),
-                        "image/jpeg"
+                        os.path.basename(path),  # Nombre del archivo
+                        compressed_image,        # Buffer con la imagen comprimida
+                        "image/jpeg"             # Tipo MIME
                     )
-                except Exception as e:
-                    self.mostrar_popup_error(f"No se pudo abrir la imagen {i}: {e}")
-                    return
+                else:
+                    # Si falla la compresión, usar la imagen original
+                    with open(path, 'rb') as original_file:
+                        files[f"foto_km_inicial_{i}"] = (
+                            os.path.basename(path),  # Nombre del archivo
+                            original_file.read(),    # Contenido original
+                            "image/jpeg"             # Tipo MIME
+                        )
 
+        # Enviar los datos al servidor
+        # url = "http://34.67.103.132:5000/api/recibir_datos_choferes"
         url = "http://127.0.0.1:5000/api/recibir_datos_choferes"
-
         try:
             response = requests.post(url, data=payload, files=files, timeout=30)
             response.raise_for_status()
@@ -327,8 +372,9 @@ class FormularioSalida(BoxLayout, Screen):
         except requests.exceptions.RequestException as e:
             self.mostrar_popup_error(f"Error de conexión: {e}")
         finally:
+            # Cerrar los buffers si se usaron
             for _, file_info in files.items():
-                if file_info:
+                if isinstance(file_info[1], io.BytesIO):
                     file_info[1].close()
 
     def limpiar_formulario(self):
@@ -599,10 +645,11 @@ class FormularioLlegada(BoxLayout, Screen):
             self.file_list_layout_fin.add_widget(label)
 
     def enviar_datos_llegada(self):
-        """Envía los datos del formulario de llegada al servidor."""
-        if not self.validar_campos_llegada():
+        """Envía los datos del formulario de llegada al servidor, usando fotos comprimidas si es posible."""
+        if not self.validar_campos_llegada():  # Validación de campos
             return
 
+        # Preparar los datos del formulario
         payload = {
             "tipo_formulario": "llegada",
             "nombre_chofer": self.nombre_input.text,
@@ -615,53 +662,43 @@ class FormularioLlegada(BoxLayout, Screen):
             "observaciones_llegada": self.observaciones_llegada_input.text
         }
 
+        # Preparar las imágenes para el envío
+        files = {}
+        for i, path in enumerate(self.fotos_fin_paths, start=1):
+            if path:
+                # Intentar comprimir la imagen
+                compressed_image = comprimir_imagen(path)
+                if compressed_image:
+                    # Si la compresión es exitosa, usar la imagen comprimida
+                    files[f"foto_km_final_{i}"] = (
+                        os.path.basename(path),  # Nombre del archivo
+                        compressed_image,        # Buffer con la imagen comprimida
+                        "image/jpeg"             # Tipo MIME
+                    )
+                else:
+                    # Si falla la compresión, usar la imagen original
+                    with open(path, 'rb') as original_file:
+                        files[f"foto_km_final_{i}"] = (
+                            os.path.basename(path),  # Nombre del archivo
+                            original_file.read(),    # Contenido original
+                            "image/jpeg"             # Tipo MIME
+                        )
+
+        # Enviar los datos al servidor
+        # url = "http://34.67.103.132:5000/api/recibir_datos_choferes"
         url = "http://127.0.0.1:5000/api/recibir_datos_choferes"
         
-        files = {}
-
         try:
-            response = requests.post(url, data=payload, timeout=30)
-            data = response.json()
-
-            if data.get('status') == 'success':
-                row_idx = data.get("row_idx")
-                if any(self.fotos_fin_paths):
-                    for i, path in enumerate(self.fotos_fin_paths, start=1):
-                        if path:
-                            try:
-                                files[f"foto_km_final_{i}"] = (
-                                    os.path.basename(path),
-                                    open(path, 'rb'),
-                                    "image/jpeg"
-                                )
-                            except Exception as e:
-                                self.mostrar_popup_error(f"No se pudo abrir la imagen {i}: {e}")
-                                return
-                    payload_foto = {
-                        "nombre_chofer": self.nombre_input.text,
-                        "placa": self.placa_input.text,
-                        "row_idx": row_idx
-                    }
-                    response_foto = requests.post(url, data=payload_foto, files=files, timeout=30)
-                    response_foto.raise_for_status()
-                    data_foto = response_foto.json()
-                    if data_foto.get('status') == 'success':
-                        self.mostrar_popup_exito("Datos de Llegada enviados exitosamente.")
-                    else:
-                        self.mostrar_popup_error(data_foto.get('message', 'Error al enviar las fotos.'))
-                else:
-                    self.mostrar_popup_exito("Datos de Llegada enviados exitosamente.")
-                self.enviar_btn_disabled = True
-            else:
-                self.mostrar_popup_error(data.get('message', 'Error al procesar los datos.'))
-
+            response = requests.post(url, data=payload, files=files, timeout=30)
+            response.raise_for_status()
+            self.mostrar_popup_exito("Datos de Llegada enviados exitosamente.")
+            self.enviar_btn_disabled = True
         except requests.exceptions.RequestException as e:
             self.mostrar_popup_error(f"Error de conexión: {e}")
-        except ValueError:
-            self.mostrar_popup_error("Respuesta del servidor no es un JSON válido.")
         finally:
+            # Cerrar los buffers si se usaron
             for _, file_info in files.items():
-                if file_info:
+                if isinstance(file_info[1], io.BytesIO):
                     file_info[1].close()
 
     def limpiar_formulario(self):
