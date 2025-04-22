@@ -15,12 +15,14 @@ from datetime import datetime
 from plyer import filechooser
 import os
 import logging
+import threading
 from kivy.uix.dropdown import DropDown
 from kivy.metrics import dp
 from kivy.animation import Animation
 from kivy.uix.screenmanager import ScreenManager, Screen
 from PIL import Image as PilImage
 import io
+from kivy.uix.progressbar import ProgressBar
 
 # URLs del servidor
 url_conductores = "http://34.67.103.132:5000/api/conductores"
@@ -35,17 +37,18 @@ if platform == "android":
     except ImportError:
         pass
 
-def comprimir_imagen(path, quality=70, max_size=(1280, 960)):
+def comprimir_imagen(path, quality=80, max_size=(1920, 1080)):
     """Intenta comprimir la imagen y devuelve un buffer con la imagen comprimida.
-    Si hay un error, devuelve None para usar la imagen original."""
+    Si hay un error, devuelve None para usar la imagen original.
+    Compatible con versiones antiguas y nuevas de Pillow."""
     try:
         # Abrir la imagen
         img = PilImage.open(path)
-        
+
         # Obtener el tamaño original
         original_width, original_height = img.size
         target_width, target_height = max_size
-        
+
         # Verificar si la imagen necesita redimensionarse
         if original_width > target_width or original_height > target_height:
             # Calcular el nuevo tamaño manteniendo la relación de aspecto
@@ -56,11 +59,23 @@ def comprimir_imagen(path, quality=70, max_size=(1280, 960)):
             else:  # Imagen más alta que ancha
                 new_height = target_height
                 new_width = int(target_height * aspect_ratio)
-            img = img.resize((new_width, new_height), PilImage.Resampling.LANCZOS)
-        
+
+            # Usar método de redimensionamiento compatible con versiones antiguas y nuevas de Pillow
+            try:
+                # Intentar usar Resampling (Pillow 9.0.0+)
+                img = img.resize((new_width, new_height), PilImage.Resampling.LANCZOS)
+            except AttributeError:
+                # Fallback para versiones antiguas de Pillow
+                try:
+                    # Intentar usar LANCZOS directamente (Pillow 4.0.0 - 8.x)
+                    img = img.resize((new_width, new_height), PilImage.LANCZOS)
+                except AttributeError:
+                    # Último fallback para versiones muy antiguas
+                    img = img.resize((new_width, new_height), PilImage.ANTIALIAS)
+
         # Crear un buffer para la imagen comprimida
         buffer = io.BytesIO()
-        img.save(buffer, format="JPEG", quality=quality)  # Comprimir con calidad 70
+        img.save(buffer, format="JPEG", quality=quality)
         buffer.seek(0)  # Reiniciar el puntero del buffer
         return buffer
     except Exception as e:
@@ -264,7 +279,7 @@ class FormularioSalida(BoxLayout, Screen):
     def mostrar_popup_fotos_seleccionadas(self, paths):
         """Muestra un popup con la lista de fotos seleccionadas."""
         content = BoxLayout(orientation='vertical', padding=10, spacing=10)
-        
+
         titulo = Label(
             text="Fotos seleccionadas:",
             font_size=dp(20),
@@ -273,7 +288,7 @@ class FormularioSalida(BoxLayout, Screen):
             color=(0, 0.5, 0.8, 1)
         )
         content.add_widget(titulo)
-        
+
         for path in paths:
             if path:
                 filename = os.path.basename(path)
@@ -287,7 +302,7 @@ class FormularioSalida(BoxLayout, Screen):
                 )
                 label.bind(size=label.setter('text_size'))
                 content.add_widget(label)
-        
+
         btn = Button(
             text="Aceptar",
             size_hint=(None, None),
@@ -295,7 +310,7 @@ class FormularioSalida(BoxLayout, Screen):
             pos_hint={'center_x': 0.5},
             background_color=(0, 0.5, 0.8, 1)
         )
-        
+
         popup = Popup(
             title='Fotos Seleccionadas',
             content=content,
@@ -303,7 +318,7 @@ class FormularioSalida(BoxLayout, Screen):
             height=dp(400),
             auto_dismiss=True
         )
-        
+
         btn.bind(on_release=popup.dismiss)
         content.add_widget(btn)
         popup.open()
@@ -321,61 +336,127 @@ class FormularioSalida(BoxLayout, Screen):
             label = Label(text="Ninguna foto seleccionada", font_size=dp(20), color=(0.5, 0.5, 0.5, 1), halign='left')
             self.file_list_layout_inicio.add_widget(label)
 
+    def mostrar_indicador_carga(self, mensaje="Enviando datos..."):
+        """Muestra un indicador de carga mientras se procesa la solicitud."""
+        content = BoxLayout(orientation='vertical', padding=20, spacing=15)
+
+        # Mensaje de carga
+        msg_label = Label(
+            text=mensaje,
+            font_size=dp(24),
+            size_hint_y=None,
+            height=dp(50),
+            halign='center'
+        )
+        content.add_widget(msg_label)
+
+        # Barra de progreso
+        progress = ProgressBar(max=100, value=40, size_hint_y=None, height=dp(30))
+        content.add_widget(progress)
+
+        # Crear y mostrar el popup
+        popup = Popup(
+            title='Procesando',
+            content=content,
+            size_hint=(0.8, None),
+            height=dp(200),
+            auto_dismiss=False
+        )
+
+        # Animar la barra de progreso
+        def update_progress(dt):
+            progress.value = (progress.value + 1) % 101
+
+        # Programar la actualización de la barra de progreso
+        Clock.schedule_interval(update_progress, 0.1)
+
+        popup.open()
+        return popup, update_progress
+
     def enviar_datos_salida(self):
-        """Envía los datos del formulario de salida al servidor, usando fotos comprimidas si es posible."""
+        """Envía los datos del formulario de salida al servidor en un hilo separado."""
         if not self.validar_campos():  # Validación de campos
             return
 
-        # Preparar los datos del formulario
-        payload = {
-            "tipo_formulario": "salida",
-            "nombre_chofer": self.nombre_input.text,
-            "vehiculo": self.vehiculo_input.text,
-            "placa": self.placa_input.text,
-            "fecha_salida": self.fecha_salida_input.text,
-            "hora_salida": self.hora_salida_input.text,
-            "ubicacion_inicial": self.ubicacion_inicial_input.text,
-            "km_inicial": self.km_inicial_input.text,
-            "observaciones_salida": self.observaciones_salida_input.text
-        }
+        # Deshabilitar el botón de envío para evitar múltiples envíos
+        self.enviar_btn_disabled = True
 
-        # Preparar las imágenes para el envío
-        files = {}
-        for i, path in enumerate(self.fotos_inicio_paths, start=1):
-            if path:
-                # Intentar comprimir la imagen
-                compressed_image = comprimir_imagen(path)
-                if compressed_image:
-                    # Si la compresión es exitosa, usar la imagen comprimida
-                    files[f"foto_km_inicial_{i}"] = (
-                        os.path.basename(path),  # Nombre del archivo
-                        compressed_image,        # Buffer con la imagen comprimida
-                        "image/jpeg"             # Tipo MIME
-                    )
-                else:
-                    # Si falla la compresión, usar la imagen original
-                    with open(path, 'rb') as original_file:
+        # Mostrar indicador de carga
+        popup_carga, update_progress = self.mostrar_indicador_carga("Enviando datos de salida...")
+
+        # Función para ejecutar en un hilo separado
+        def enviar_en_hilo():
+            # Preparar los datos del formulario
+            payload = {
+                "tipo_formulario": "salida",
+                "nombre_chofer": self.nombre_input.text,
+                "vehiculo": self.vehiculo_input.text,
+                "placa": self.placa_input.text,
+                "fecha_salida": self.fecha_salida_input.text,
+                "hora_salida": self.hora_salida_input.text,
+                "ubicacion_inicial": self.ubicacion_inicial_input.text,
+                "km_inicial": self.km_inicial_input.text,
+                "observaciones_salida": self.observaciones_salida_input.text
+            }
+
+            # Preparar las imágenes para el envío
+            files = {}
+            for i, path in enumerate(self.fotos_inicio_paths, start=1):
+                if path:
+                    # Intentar comprimir la imagen
+                    compressed_image = comprimir_imagen(path)
+                    if compressed_image:
+                        # Si la compresión es exitosa, usar la imagen comprimida
                         files[f"foto_km_inicial_{i}"] = (
                             os.path.basename(path),  # Nombre del archivo
-                            original_file.read(),    # Contenido original
+                            compressed_image,        # Buffer con la imagen comprimida
                             "image/jpeg"             # Tipo MIME
                         )
+                    else:
+                        # Si falla la compresión, usar la imagen original
+                        with open(path, 'rb') as original_file:
+                            files[f"foto_km_inicial_{i}"] = (
+                                os.path.basename(path),  # Nombre del archivo
+                                original_file.read(),    # Contenido original
+                                "image/jpeg"             # Tipo MIME
+                            )
 
-        # Enviar los datos al servidor
-        url = "http://34.67.103.132:5000/api/recibir_datos_choferes"
-        # url = "http://127.0.0.1:5000/api/recibir_datos_choferes"
-        try:
-            response = requests.post(url, data=payload, files=files, timeout=30)
-            response.raise_for_status()
-            self.mostrar_popup_exito("Datos de Salida enviados exitosamente.")
-            self.enviar_btn_disabled = True
-        except requests.exceptions.RequestException as e:
-            self.mostrar_popup_error(f"Error de conexión: {e}")
-        finally:
-            # Cerrar los buffers si se usaron
-            for _, file_info in files.items():
-                if isinstance(file_info[1], io.BytesIO):
-                    file_info[1].close()
+            # Enviar los datos al servidor
+            url = "http://34.67.103.132:5000/api/recibir_datos_choferes"
+            # url = "http://127.0.0.1:5000/api/recibir_datos_choferes"
+            success = False
+            error_msg = ""
+
+            try:
+                response = requests.post(url, data=payload, files=files, timeout=30)
+                response.raise_for_status()
+                success = True
+            except requests.exceptions.RequestException as e:
+                error_msg = f"Error de conexión: {e}"
+            finally:
+                # Cerrar los buffers si se usaron
+                for _, file_info in files.items():
+                    if isinstance(file_info[1], io.BytesIO):
+                        file_info[1].close()
+
+            # Actualizar la UI desde el hilo principal
+            def actualizar_ui(dt):
+                # Detener la animación de la barra de progreso
+                Clock.unschedule(update_progress)
+                # Cerrar el popup de carga
+                popup_carga.dismiss()
+
+                if success:
+                    self.mostrar_popup_exito("Datos de Salida enviados exitosamente.")
+                else:
+                    self.mostrar_popup_error(error_msg)
+                    self.enviar_btn_disabled = False
+
+            # Programar la actualización de la UI
+            Clock.schedule_once(actualizar_ui, 0)
+
+        # Iniciar el hilo
+        threading.Thread(target=enviar_en_hilo).start()
 
     def limpiar_formulario(self):
         """Limpia los campos del formulario de salida."""
@@ -393,13 +474,119 @@ class FormularioSalida(BoxLayout, Screen):
         self.enviar_btn_disabled = False
 
     def mostrar_popup_exito(self, mensaje):
-        """Muestra un popup de éxito."""
-        popup = Popup(title='Éxito', content=Label(text=mensaje, font_size=dp(20)), size_hint=(0.8, 0.4))
+        """Muestra una notificación de éxito más amigable y visible."""
+        # Crear un layout para el contenido del popup
+        content = BoxLayout(orientation='vertical', padding=20, spacing=15)
+
+        # Agregar un ícono de éxito (usando un label con emoji)
+        # icon = Label(
+        #     text="✅",
+        #     font_size=dp(60),
+        #     size_hint_y=None,
+        #     height=dp(80),
+        #     halign='center'
+        # )
+        # content.add_widget(icon)
+
+        # Agregar el mensaje
+        msg_label = Label(
+            text=mensaje,
+            font_size=dp(24),
+            size_hint_y=None,
+            height=dp(80),
+            halign='center',
+            valign='middle',
+            color=(0, 0.6, 0, 1)  # Verde oscuro
+        )
+        msg_label.bind(size=msg_label.setter('text_size'))
+        content.add_widget(msg_label)
+
+        # Agregar un botón para cerrar
+        btn = Button(
+            text="Aceptar",
+            size_hint=(None, None),
+            size=(dp(200), dp(70)),
+            pos_hint={'center_x': 0.5},
+            background_color=(0, 0.7, 0, 1),  # Verde
+            font_size=dp(24)
+        )
+        content.add_widget(btn)
+
+        # Crear y mostrar el popup
+        popup = Popup(
+            title='¡Operación Exitosa!',
+            title_color=(0, 0.7, 0, 1),  # Verde
+            title_size=dp(24),
+            content=content,
+            size_hint=(0.9, None),
+            height=dp(350),
+            auto_dismiss=False,  # Forzar al usuario a hacer clic en el botón
+            background_color=(1, 1, 1, 0.95)  # Fondo blanco semi-transparente
+        )
+
+        # Vincular el botón para cerrar el popup
+        btn.bind(on_release=popup.dismiss)
+
+        # Abrir el popup
         popup.open()
 
+        # Programar el cierre automático después de 5 segundos
+        Clock.schedule_once(popup.dismiss, 5)
+
     def mostrar_popup_error(self, mensaje):
-        """Muestra un popup de error."""
-        popup = Popup(title='Error', content=Label(text=mensaje, font_size=dp(20)), size_hint=(0.8, 0.4))
+        """Muestra una notificación de error más amigable y visible."""
+        # Crear un layout para el contenido del popup
+        content = BoxLayout(orientation='vertical', padding=20, spacing=15)
+
+        # Agregar un ícono de error (usando un label con emoji)
+        # icon = Label(
+        #     text="⚠️",  # Emoji de advertencia
+        #     font_size=dp(60),
+        #     size_hint_y=None,
+        #     height=dp(80),
+        #     halign='center'
+        # )
+        # content.add_widget(icon)
+
+        # Agregar el mensaje
+        msg_label = Label(
+            text=mensaje,
+            font_size=dp(24),
+            size_hint_y=None,
+            height=dp(80),
+            halign='center',
+            valign='middle',
+            color=(0.8, 0, 0, 1)  # Rojo oscuro
+        )
+        msg_label.bind(size=msg_label.setter('text_size'))
+        content.add_widget(msg_label)
+
+        # Agregar un botón para cerrar
+        btn = Button(
+            text="Entendido",
+            size_hint=(None, None),
+            size=(dp(200), dp(70)),
+            pos_hint={'center_x': 0.5},
+            background_color=(0.8, 0, 0, 1),  # Rojo
+            font_size=dp(24)
+        )
+        content.add_widget(btn)
+
+        # Crear y mostrar el popup
+        popup = Popup(
+            title='Atención',
+            title_color=(0.8, 0, 0, 1),  # Rojo
+            title_size=dp(24),
+            content=content,
+            size_hint=(0.9, None),
+            height=dp(350),
+            auto_dismiss=False  # Forzar al usuario a hacer clic en el botón
+        )
+
+        # Vincular el botón para cerrar el popup
+        btn.bind(on_release=popup.dismiss)
+
+        # Abrir el popup
         popup.open()
 
 # Formulario de Llegada
@@ -587,7 +774,7 @@ class FormularioLlegada(BoxLayout, Screen):
     def mostrar_popup_fotos_seleccionadas(self, paths):
         """Muestra un popup con la lista de fotos seleccionadas."""
         content = BoxLayout(orientation='vertical', padding=10, spacing=10)
-        
+
         titulo = Label(
             text="Fotos seleccionadas:",
             font_size=dp(20),
@@ -596,7 +783,7 @@ class FormularioLlegada(BoxLayout, Screen):
             color=(0, 0.5, 0.8, 1)
         )
         content.add_widget(titulo)
-        
+
         for path in paths:
             if path:
                 filename = os.path.basename(path)
@@ -610,7 +797,7 @@ class FormularioLlegada(BoxLayout, Screen):
                 )
                 label.bind(size=label.setter('text_size'))
                 content.add_widget(label)
-        
+
         btn = Button(
             text="Aceptar",
             size_hint=(None, None),
@@ -618,7 +805,7 @@ class FormularioLlegada(BoxLayout, Screen):
             pos_hint={'center_x': 0.5},
             background_color=(0, 0.5, 0.8, 1)
         )
-        
+
         popup = Popup(
             title='Fotos Seleccionadas',
             content=content,
@@ -626,7 +813,7 @@ class FormularioLlegada(BoxLayout, Screen):
             height=dp(400),
             auto_dismiss=True
         )
-        
+
         btn.bind(on_release=popup.dismiss)
         content.add_widget(btn)
         popup.open()
@@ -644,62 +831,127 @@ class FormularioLlegada(BoxLayout, Screen):
             label = Label(text="Ninguna foto seleccionada", font_size=dp(20), color=(0.5, 0.5, 0.5, 1), halign='left')
             self.file_list_layout_fin.add_widget(label)
 
+    def mostrar_indicador_carga(self, mensaje="Enviando datos..."):
+        """Muestra un indicador de carga mientras se procesa la solicitud."""
+        content = BoxLayout(orientation='vertical', padding=20, spacing=15)
+
+        # Mensaje de carga
+        msg_label = Label(
+            text=mensaje,
+            font_size=dp(24),
+            size_hint_y=None,
+            height=dp(50),
+            halign='center'
+        )
+        content.add_widget(msg_label)
+
+        # Barra de progreso
+        progress = ProgressBar(max=100, value=40, size_hint_y=None, height=dp(30))
+        content.add_widget(progress)
+
+        # Crear y mostrar el popup
+        popup = Popup(
+            title='Procesando',
+            content=content,
+            size_hint=(0.8, None),
+            height=dp(200),
+            auto_dismiss=False
+        )
+
+        # Animar la barra de progreso
+        def update_progress(dt):
+            progress.value = (progress.value + 1) % 101
+
+        # Programar la actualización de la barra de progreso
+        Clock.schedule_interval(update_progress, 0.1)
+
+        popup.open()
+        return popup, update_progress
+
     def enviar_datos_llegada(self):
-        """Envía los datos del formulario de llegada al servidor, usando fotos comprimidas si es posible."""
+        """Envía los datos del formulario de llegada al servidor en un hilo separado."""
         if not self.validar_campos_llegada():  # Validación de campos
             return
 
-        # Preparar los datos del formulario
-        payload = {
-            "tipo_formulario": "llegada",
-            "nombre_chofer": self.nombre_input.text,
-            "vehiculo": self.vehiculo_input.text,
-            "placa": self.placa_input.text,
-            "fecha_llegada": self.fecha_llegada_input.text,
-            "hora_retorno": self.hora_retorno_input.text,
-            "ubicacion_final": self.ubicacion_final_input.text,
-            "km_final": self.km_final_input.text,
-            "observaciones_llegada": self.observaciones_llegada_input.text
-        }
+        # Deshabilitar el botón de envío para evitar múltiples envíos
+        self.enviar_btn_disabled = True
 
-        # Preparar las imágenes para el envío
-        files = {}
-        for i, path in enumerate(self.fotos_fin_paths, start=1):
-            if path:
-                # Intentar comprimir la imagen
-                compressed_image = comprimir_imagen(path)
-                if compressed_image:
-                    # Si la compresión es exitosa, usar la imagen comprimida
-                    files[f"foto_km_final_{i}"] = (
-                        os.path.basename(path),  # Nombre del archivo
-                        compressed_image,        # Buffer con la imagen comprimida
-                        "image/jpeg"             # Tipo MIME
-                    )
-                else:
-                    # Si falla la compresión, usar la imagen original
-                    with open(path, 'rb') as original_file:
+        # Mostrar indicador de carga
+        popup_carga, update_progress = self.mostrar_indicador_carga("Enviando datos de llegada...")
+
+        # Función para ejecutar en un hilo separado
+        def enviar_en_hilo():
+            # Preparar los datos del formulario
+            payload = {
+                "tipo_formulario": "llegada",
+                "nombre_chofer": self.nombre_input.text,
+                "vehiculo": self.vehiculo_input.text,
+                "placa": self.placa_input.text,
+                "fecha_llegada": self.fecha_llegada_input.text,
+                "hora_retorno": self.hora_retorno_input.text,
+                "ubicacion_final": self.ubicacion_final_input.text,
+                "km_final": self.km_final_input.text,
+                "observaciones_llegada": self.observaciones_llegada_input.text
+            }
+
+            # Preparar las imágenes para el envío
+            files = {}
+            for i, path in enumerate(self.fotos_fin_paths, start=1):
+                if path:
+                    # Intentar comprimir la imagen
+                    compressed_image = comprimir_imagen(path)
+                    if compressed_image:
+                        # Si la compresión es exitosa, usar la imagen comprimida
                         files[f"foto_km_final_{i}"] = (
                             os.path.basename(path),  # Nombre del archivo
-                            original_file.read(),    # Contenido original
+                            compressed_image,        # Buffer con la imagen comprimida
                             "image/jpeg"             # Tipo MIME
                         )
+                    else:
+                        # Si falla la compresión, usar la imagen original
+                        with open(path, 'rb') as original_file:
+                            files[f"foto_km_final_{i}"] = (
+                                os.path.basename(path),  # Nombre del archivo
+                                original_file.read(),    # Contenido original
+                                "image/jpeg"             # Tipo MIME
+                            )
 
-        # Enviar los datos al servidor
-        url = "http://34.67.103.132:5000/api/recibir_datos_choferes"
-        # url = "http://127.0.0.1:5000/api/recibir_datos_choferes"
-        
-        try:
-            response = requests.post(url, data=payload, files=files, timeout=30)
-            response.raise_for_status()
-            self.mostrar_popup_exito("Datos de Llegada enviados exitosamente.")
-            self.enviar_btn_disabled = True
-        except requests.exceptions.RequestException as e:
-            self.mostrar_popup_error(f"Error de conexión: {e}")
-        finally:
-            # Cerrar los buffers si se usaron
-            for _, file_info in files.items():
-                if isinstance(file_info[1], io.BytesIO):
-                    file_info[1].close()
+            # Enviar los datos al servidor
+            url = "http://34.67.103.132:5000/api/recibir_datos_choferes"
+            # url = "http://127.0.0.1:5000/api/recibir_datos_choferes"
+            success = False
+            error_msg = ""
+
+            try:
+                response = requests.post(url, data=payload, files=files, timeout=30)
+                response.raise_for_status()
+                success = True
+            except requests.exceptions.RequestException as e:
+                error_msg = f"Error de conexión: {e}"
+            finally:
+                # Cerrar los buffers si se usaron
+                for _, file_info in files.items():
+                    if isinstance(file_info[1], io.BytesIO):
+                        file_info[1].close()
+
+            # Actualizar la UI desde el hilo principal
+            def actualizar_ui(dt):
+                # Detener la animación de la barra de progreso
+                Clock.unschedule(update_progress)
+                # Cerrar el popup de carga
+                popup_carga.dismiss()
+
+                if success:
+                    self.mostrar_popup_exito("Datos de Llegada enviados exitosamente.")
+                else:
+                    self.mostrar_popup_error(error_msg)
+                    self.enviar_btn_disabled = False
+
+            # Programar la actualización de la UI
+            Clock.schedule_once(actualizar_ui, 0)
+
+        # Iniciar el hilo
+        threading.Thread(target=enviar_en_hilo).start()
 
     def limpiar_formulario(self):
         """Limpia los campos del formulario de llegada."""
@@ -717,13 +969,119 @@ class FormularioLlegada(BoxLayout, Screen):
         self.enviar_btn_disabled = False
 
     def mostrar_popup_exito(self, mensaje):
-        """Muestra un popup de éxito."""
-        popup = Popup(title='Éxito', content=Label(text=mensaje, font_size=dp(20)), size_hint=(0.8, 0.4))
+        """Muestra una notificación de éxito más amigable y visible."""
+        # Crear un layout para el contenido del popup
+        content = BoxLayout(orientation='vertical', padding=20, spacing=15)
+
+        # Agregar un ícono de éxito (usando un label con emoji)
+        # icon = Label(
+        #     text="✅",
+        #     font_size=dp(60),
+        #     size_hint_y=None,
+        #     height=dp(80),
+        #     halign='center'
+        # )
+        # content.add_widget(icon)
+
+        # Agregar el mensaje
+        msg_label = Label(
+            text=mensaje,
+            font_size=dp(24),
+            size_hint_y=None,
+            height=dp(80),
+            halign='center',
+            valign='middle',
+            color=(0, 0.6, 0, 1)  # Verde oscuro
+        )
+        msg_label.bind(size=msg_label.setter('text_size'))
+        content.add_widget(msg_label)
+
+        # Agregar un botón para cerrar
+        btn = Button(
+            text="Aceptar",
+            size_hint=(None, None),
+            size=(dp(200), dp(70)),
+            pos_hint={'center_x': 0.5},
+            background_color=(0, 0.7, 0, 1),  # Verde
+            font_size=dp(24)
+        )
+        content.add_widget(btn)
+
+        # Crear y mostrar el popup
+        popup = Popup(
+            title='¡Operación Exitosa!',
+            title_color=(0, 0.7, 0, 1),  # Verde
+            title_size=dp(24),
+            content=content,
+            size_hint=(0.9, None),
+            height=dp(350),
+            auto_dismiss=False,  # Forzar al usuario a hacer clic en el botón
+            background_color=(1, 1, 1, 0.95)  # Fondo blanco semi-transparente
+        )
+
+        # Vincular el botón para cerrar el popup
+        btn.bind(on_release=popup.dismiss)
+
+        # Abrir el popup
         popup.open()
 
+        # Programar el cierre automático después de 5 segundos
+        Clock.schedule_once(popup.dismiss, 5)
+
     def mostrar_popup_error(self, mensaje):
-        """Muestra un popup de error."""
-        popup = Popup(title='Error', content=Label(text=mensaje, font_size=dp(20)), size_hint=(0.8, 0.4))
+        """Muestra una notificación de error más amigable y visible."""
+        # Crear un layout para el contenido del popup
+        content = BoxLayout(orientation='vertical', padding=20, spacing=15)
+
+        # Agregar un ícono de error (usando un label con emoji)
+        # icon = Label(
+        #     text="⚠️",  # Emoji de advertencia
+        #     font_size=dp(60),
+        #     size_hint_y=None,
+        #     height=dp(80),
+        #     halign='center'
+        # )
+        # content.add_widget(icon)
+
+        # Agregar el mensaje
+        msg_label = Label(
+            text=mensaje,
+            font_size=dp(24),
+            size_hint_y=None,
+            height=dp(80),
+            halign='center',
+            valign='middle',
+            color=(0.8, 0, 0, 1)  # Rojo oscuro
+        )
+        msg_label.bind(size=msg_label.setter('text_size'))
+        content.add_widget(msg_label)
+
+        # Agregar un botón para cerrar
+        btn = Button(
+            text="Entendido",
+            size_hint=(None, None),
+            size=(dp(200), dp(70)),
+            pos_hint={'center_x': 0.5},
+            background_color=(0.8, 0, 0, 1),  # Rojo
+            font_size=dp(24)
+        )
+        content.add_widget(btn)
+
+        # Crear y mostrar el popup
+        popup = Popup(
+            title='Atención',
+            title_color=(0.8, 0, 0, 1),  # Rojo
+            title_size=dp(24),
+            content=content,
+            size_hint=(0.9, None),
+            height=dp(350),
+            auto_dismiss=False  # Forzar al usuario a hacer clic en el botón
+        )
+
+        # Vincular el botón para cerrar el popup
+        btn.bind(on_release=popup.dismiss)
+
+        # Abrir el popup
         popup.open()
 
 # Aplicación Principal
