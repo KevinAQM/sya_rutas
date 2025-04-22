@@ -362,8 +362,8 @@ class FormularioSalida(BoxLayout, Screen):
                         )
 
         # Enviar los datos al servidor
-        # url = "http://34.67.103.132:5000/api/recibir_datos_choferes"
-        url = "http://127.0.0.1:5000/api/recibir_datos_choferes"
+        url = "http://34.67.103.132:5000/api/recibir_datos_choferes"
+        # url = "http://127.0.0.1:5000/api/recibir_datos_choferes"
         try:
             response = requests.post(url, data=payload, files=files, timeout=30)
             response.raise_for_status()
@@ -685,8 +685,8 @@ class FormularioLlegada(BoxLayout, Screen):
                         )
 
         # Enviar los datos al servidor
-        # url = "http://34.67.103.132:5000/api/recibir_datos_choferes"
-        url = "http://127.0.0.1:5000/api/recibir_datos_choferes"
+        url = "http://34.67.103.132:5000/api/recibir_datos_choferes"
+        # url = "http://127.0.0.1:5000/api/recibir_datos_choferes"
         
         try:
             response = requests.post(url, data=payload, files=files, timeout=30)

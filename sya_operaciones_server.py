@@ -763,6 +763,49 @@ def descargar_registro_rutas():
         logging.error(f"Error al generar descarga de Excel de registros de choferes: {str(e)}")
         return str(e), 500
 
+@app.route('/api/listar-carpetas-fotos', methods=['GET'])
+def listar_carpetas_fotos():
+    """Devuelve la lista de carpetas con el número de fotos en cada una."""
+    try:
+        carpetas = {}
+        for nombre in os.listdir(FOTOS_VEHICULOS_DIR):
+            carpeta_path = os.path.join(FOTOS_VEHICULOS_DIR, nombre)
+            if os.path.isdir(carpeta_path):
+                num_fotos = len([f for f in os.listdir(carpeta_path) if os.path.isfile(os.path.join(carpeta_path, f))])
+                carpetas[nombre] = num_fotos
+        return jsonify(carpetas)
+    except Exception as e:
+        logging.error(f"Error al listar carpetas de fotos: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/descargar-carpeta-fotos/<nombre_carpeta>', methods=['GET'])
+def descargar_carpeta_fotos_especifica(nombre_carpeta):
+    """Comprime y descarga una carpeta específica de fotos_vehiculos."""
+    try:
+        carpeta_path = os.path.join(FOTOS_VEHICULOS_DIR, nombre_carpeta)
+        if not os.path.exists(carpeta_path) or not os.path.isdir(carpeta_path):
+            return jsonify({"error": "Carpeta no encontrada"}), 404
+        
+        zip_file_path = os.path.join(BASE_DIR, f"{nombre_carpeta}.zip")
+        with zipfile.ZipFile(zip_file_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            for root, _, files in os.walk(carpeta_path):
+                for file in files:
+                    zipf.write(os.path.join(root, file),
+                              os.path.relpath(os.path.join(root, file),
+                                             os.path.join(carpeta_path, '..')))
+        
+        # Enviar el archivo ZIP al cliente
+        response = send_file(zip_file_path, as_attachment=True, download_name=f"{nombre_carpeta}.zip")
+        
+        # Eliminar el archivo ZIP después de enviarlo
+        os.remove(zip_file_path)
+        logging.info(f"Archivo ZIP temporal eliminado: {zip_file_path}")
+        
+        return response
+    except Exception as e:
+        logging.error(f"Error al comprimir o descargar la carpeta {nombre_carpeta}: {str(e)}")
+        return str(e), 500
+
 @app.route('/descargar-carpeta-fotos', methods=['GET'])
 def descargar_carpeta_fotos():
     """Comprime y descarga la carpeta de fotos de kilometraje."""
@@ -779,6 +822,7 @@ def descargar_carpeta_fotos():
     except Exception as e:
         logging.error(f"Error al comprimir o descargar la carpeta de fotos: {str(e)}")
         return str(e), 500
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=False) # debug=True para desarrollo

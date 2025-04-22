@@ -30,6 +30,39 @@ def crear_carpeta_descargas():
             messagebox.showerror("Error", f"No se pudo crear la carpeta 'descargas':\n{e}")
     return ruta_descargas
 
+def obtener_lista_carpetas_servidor():
+    url_servidor = "http://34.67.103.132:5000/api/listar-carpetas-fotos"  # Ajusta la URL si es necesario
+    try:
+        respuesta = requests.get(url_servidor)
+        respuesta.raise_for_status()
+        return respuesta.json()  # Devuelve {nombre: num_fotos}
+    except requests.exceptions.RequestException as e:
+        messagebox.showerror("Error", f"No se pudo conectar al servidor:\n{e}")
+        return {}
+
+def contar_fotos_local(carpeta_path):
+    """Cuenta el número de fotos en una carpeta local."""
+    if not os.path.exists(carpeta_path):
+        return 0
+    return len([f for f in os.listdir(carpeta_path) if os.path.isfile(os.path.join(carpeta_path, f))])
+
+def obtener_carpetas_a_descargar():
+    ruta_descargas = "descargas"  # Ajusta esta ruta
+    ruta_fotos_local = os.path.join(ruta_descargas, "fotos_vehiculos")
+    if not os.path.exists(ruta_fotos_local):
+        os.makedirs(ruta_fotos_local)
+    
+    carpetas_servidor = obtener_lista_carpetas_servidor()  # {nombre: num_fotos}
+    carpetas_a_descargar = []
+    
+    for nombre, num_fotos_servidor in carpetas_servidor.items():
+        carpeta_local_path = os.path.join(ruta_fotos_local, nombre)
+        num_fotos_local = contar_fotos_local(carpeta_local_path)
+        if num_fotos_local < num_fotos_servidor:
+            carpetas_a_descargar.append(nombre)
+    
+    return carpetas_a_descargar
+
 def descargar_archivo(url, nombre_archivo):
     try:
         respuesta = requests.get(url, stream=True)
@@ -42,8 +75,7 @@ def descargar_archivo(url, nombre_archivo):
             for chunk in respuesta.iter_content(chunk_size=8192):
                 archivo.write(chunk)
 
-        messagebox.showinfo("Descarga completada", f"Archivo '{nombre_archivo}' descargado exitosamente en:\n{nombre_archivo_completo}")
-        return nombre_archivo_completo
+        return nombre_archivo_completo  # Retorna la ruta del archivo descargado
     except requests.exceptions.RequestException as e:
         messagebox.showerror("Error de descarga", f"Error al descargar el archivo:\n{e}")
         return None
@@ -52,26 +84,47 @@ def descomprimir_archivo(ruta_archivo, carpeta_destino):
     try:
         with zipfile.ZipFile(ruta_archivo, 'r') as zip_ref:
             zip_ref.extractall(carpeta_destino)
-        messagebox.showinfo("Descompresión completada", f"Carpeta descomprimida en: {carpeta_destino}")
+        os.remove(ruta_archivo)  # Elimina el archivo ZIP después de descomprimirlo
+        return True
     except zipfile.BadZipFile:
         messagebox.showerror("Error", "El archivo descargado no es un archivo ZIP válido.")
+        return False
     except Exception as e:
         messagebox.showerror("Error", f"Error al descomprimir el archivo:\n{e}")
+        return False
 
 def on_descargar_rutas():
     url_servidor = "http://34.67.103.132:5000/descargar-registro-rutas"
-    # url_servidor = "http://127.0.0.1:5000/descargar-registro-rutas"
     nombre_archivo = "registros_choferes.xlsx"
-    ruta_registros = descargar_archivo(url_servidor, nombre_archivo)
+    ruta_archivo = descargar_archivo(url_servidor, nombre_archivo)
+    if ruta_archivo:
+        messagebox.showinfo("Descarga completada", "Registro Excel descargado correctamente.")
 
 def on_descargar_fotos():
-    url_servidor = "http://34.67.103.132:5000/descargar-carpeta-fotos"
-    # url_servidor = "http://127.0.0.1:5000/descargar-carpeta-fotos"
-    nombre_archivo = "fotos_vehiculos.zip"
-    ruta_zip = descargar_archivo(url_servidor, nombre_archivo)
-    if ruta_zip:
-        ruta_descargas = crear_carpeta_descargas()
-        descomprimir_archivo(ruta_zip, ruta_descargas)
+    carpetas_a_descargar = obtener_carpetas_a_descargar()
+    if not carpetas_a_descargar:
+        messagebox.showinfo("Información", "No hay nuevas imágenes para descargar.")
+        return
+    
+    ruta_descargas = crear_carpeta_descargas()
+    ruta_fotos_local = os.path.join(ruta_descargas, "fotos_vehiculos")
+    
+    todas_descargadas = True  # Bandera para verificar si todo fue exitoso
+    
+    for carpeta in carpetas_a_descargar:
+        url_servidor = f"http://34.67.103.132:5000/descargar-carpeta-fotos/{carpeta}"
+        nombre_archivo = f"{carpeta}.zip"
+        ruta_zip = descargar_archivo(url_servidor, nombre_archivo)
+        if ruta_zip:
+            if not descomprimir_archivo(ruta_zip, ruta_fotos_local):
+                todas_descargadas = False
+        else:
+            todas_descargadas = False
+    
+    if todas_descargadas:
+        messagebox.showinfo("Descarga completada", "Imágenes descargadas correctamente.")
+    else:
+        messagebox.showwarning("Advertencia", "Algunas imágenes no se pudieron descargar o descomprimir correctamente.")
 
 def abrir_archivo(ruta_archivo):
     if os.path.exists(ruta_archivo):
