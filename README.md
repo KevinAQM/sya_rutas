@@ -47,7 +47,7 @@ La aplicación móvil de Gestión de Rutas es una herramienta diseñada específ
 - Envío de datos e imágenes al servidor central
 - Indicador visual de progreso durante la transmisión
 - Notificaciones claras sobre el éxito o fallo del envío
-- Procesamiento en segundo plano que permite seguir usando la aplicación durante el envío
+- Procesamiento de datos en segundo plano mientras se usa la aplicación.
 
 ## Guía de Uso
 
