@@ -4,6 +4,9 @@
 
 La aplicación móvil de Gestión de Rutas es una herramienta diseñada específicamente para SMONT y ARAGÓN que permite a los conductores registrar información detallada sobre sus rutas, incluyendo datos de salida, llegada y documentación fotográfica de los vehículos. Esta aplicación facilita el seguimiento y control de la flota vehicular, mejorando la gestión logística y el mantenimiento de registros.
 
+## Pantalla Principal, Formulario de Salida y Formulario de Llegada
+![image](https://github.com/user-attachments/assets/c384764f-65a4-4f49-8cf8-ed824367d296)
+
 ## Funcionalidades Principales
 
 ### 1. Pantalla Principal
@@ -77,9 +80,6 @@ La aplicación móvil de Gestión de Rutas es una herramienta diseñada específ
 - Permisos de cámara y almacenamiento
 - Conexión a Internet para sincronización de datos
 - Espacio mínimo recomendado: 75MB
-
-## Pantalla Principal, Formulario de Salida y Formulario de Llegada
-![image](https://github.com/user-attachments/assets/c384764f-65a4-4f49-8cf8-ed824367d296)
 
 ## Formato de los campos
 
