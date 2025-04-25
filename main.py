@@ -421,7 +421,7 @@ class FormularioSalida(BoxLayout, Screen):
                                 "image/jpeg"             # Tipo MIME
                             )
 
-            # Enviar los datos al servidor
+            # Enviar los datos al servidor gcp
             url = "http://34.67.103.132:5000/api/recibir_datos_choferes"
             # url = "http://127.0.0.1:5000/api/recibir_datos_choferes"
             success = False
